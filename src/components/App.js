@@ -107,7 +107,7 @@ class App extends Component {
             ))}
           </ul>
         </div>
-        <TransferMagic />
+        {/* <TransferMagic /> */}
       </div>
     )
   }
