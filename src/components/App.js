@@ -1,19 +1,16 @@
 import React, { Component } from "react"
 import { connect } from "react-redux"
-import moment from "moment"
 
 import { fetchStationETDs, fetchBartAdvisories } from "../actions"
 import { currentStationEtdsSelector } from "../selectors"
 import { stationsHome } from "../utilities"
+import TransferMagic from "./transfer-magic"
 
 class App extends Component {
   state = {}
 
   componentWillMount() {
-    this.props.dispatch(
-      fetchStationETDs(this.props.settings.currentBartStation)
-    )
-    this.props.dispatch(fetchBartAdvisories())
+    this.load()
   }
   load() {
     this.props.dispatch(
@@ -25,25 +22,21 @@ class App extends Component {
 
   render() {
     const {
-      settings: {
-        currentBartStation,
-        bartDirection,
-        walkingMinutes,
-        trainTime,
-      },
+      settings: { currentBartStation, walkingMinutes, trainTime },
       stationETDs,
       bartAdvisories,
     } = this.props
-    console.log(stationETDs)
+
     return (
       <div className="App">
         <div className="bart-trains">
           {stationETDs.isFetching && (
-            <span className="loading">loading trains</span>
+            <span className="loading">loading {currentBartStation} trains</span>
           )}
           {!stationETDs.isFetching && (
             <span className="loading">
-              as of {stationETDs.at.format("s")} seconds ago
+              {currentBartStation} as of {stationETDs.at.format("s")} seconds
+              ago
             </span>
           )}
 
@@ -114,6 +107,7 @@ class App extends Component {
             ))}
           </ul>
         </div>
+        <TransferMagic />
       </div>
     )
   }

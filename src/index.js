@@ -4,6 +4,7 @@ import { Provider } from "react-redux"
 import "./index.css"
 import Store from "./store"
 import App from "./components/App"
+
 import registerServiceWorker from "./registerServiceWorker"
 
 const StoreInstance = Store()

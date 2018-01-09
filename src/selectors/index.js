@@ -33,3 +33,35 @@ export const currentStationEtdsSelector = createSelector(
     }
   }
 )
+
+export const transferMagicSelector = createSelector(
+  stationETDsSelector,
+  stationETDs => {
+    const stations = ["19TH", "12TH", "MCAR"]
+    const targetDests = ["RICH"]
+    // const transferDests = ["PITT", "NCON"]
+    const sourceColors = ["YELLOW"]
+    const sourceDirection = "North"
+
+    if (stations.some(s => !stationETDs[s] || !stationETDs[s].trains)) {
+      return { isFetching: true }
+    }
+
+    return stations.reduce(
+      (acc, station) =>
+        Object.assign(acc, {
+          [station]: {
+            targetTrains: stationETDs[station].trains.filter(t =>
+              targetDests.includes(t.abbreviation)
+            ),
+            sourceTrains: stationETDs[station].trains.filter(
+              t =>
+                sourceColors.includes(t.color) &&
+                t.direction === sourceDirection
+            ),
+          },
+        }),
+      {}
+    )
+  }
+)
