@@ -34,14 +34,17 @@ export default function stationETDs(state = defaultState, action) {
         .reduce(
           (acc, { destination, abbreviation, limited, estimate }) =>
             acc.concat(
-              estimate.map(train =>
-                Object.assign(train, {
+              estimate.map(train => {
+                const intMinutes =
+                  train.minutes === "Leaving" ? 0 : parseInt(train.minutes, 10)
+                return Object.assign(train, {
                   destination,
                   abbreviation,
                   limited,
-                  at: at.clone().add(train.minutes, "minutes"),
+                  intMinutes,
+                  at: at.clone().add(intMinutes, "minutes"),
                 })
-              )
+              })
             ),
           []
         )

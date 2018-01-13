@@ -1,45 +1,63 @@
 import React, { Component } from "react"
 import { connect } from "react-redux"
+import { Link } from "react-router-dom"
 
 import { fetchStationETDs, fetchBartAdvisories } from "../actions"
 import { currentStationEtdsSelector } from "../selectors"
 import { stationsHome } from "../utilities"
-import TransferMagic from "./transfer-magic"
 
-class App extends Component {
-  state = {}
+class Trip extends Component {
+  state = {
+    timer: null,
+    counter: 0,
+  }
 
   componentWillMount() {
     this.load()
   }
+
+  componentDidMount() {
+    this.setState({ timer: setInterval(this.tick, 3000) })
+  }
+
+  componentWillUnmount() {
+    clearInterval(this.state.timer)
+  }
+
   load() {
     this.props.dispatch(
-      fetchStationETDs(this.props.settings.currentBartStation)
+      fetchStationETDs(
+        this.props.settings.currentBartStation,
+        this.props.settings.bartDirection
+      )
     )
     this.props.dispatch(fetchBartAdvisories())
   }
+
   handleReload = e => this.load()
+
+  tick = () => {
+    console.log(this.state.counter)
+    this.setState({
+      counter: this.state.counter + 1,
+    })
+  }
 
   render() {
     const {
-      settings: { currentBartStation, walkingMinutes, trainTime },
+      settings: {
+        currentBartStation,
+        bartDirection,
+        walkingMinutes,
+        trainTime,
+      },
       stationETDs,
       bartAdvisories,
     } = this.props
 
     return (
-      <div className="App">
+      <div className="bart-home">
         <div className="bart-trains">
-          {stationETDs.isFetching && (
-            <span className="loading">loading {currentBartStation} trains</span>
-          )}
-          {!stationETDs.isFetching && (
-            <span className="loading">
-              {currentBartStation} as of {stationETDs.at.format("s")} seconds
-              ago
-            </span>
-          )}
-
           {stationETDs.trains && (
             <div id="bart-trains">
               {stationETDs.trains.map(
@@ -89,13 +107,22 @@ class App extends Component {
             </span>
           )}
         </div>
-        <button id="reload" onClick={this.handleReload}>
-          Reload
-        </button>
-        <p id="estimate-info">
-          Arrival estimates include {trainTime} minutes on train and{" "}
-          {walkingMinutes} minutes on foot.
-        </p>
+        <div className="data-freshness">
+          {stationETDs.isFetching && (
+            <span className="loading">
+              loading {currentBartStation} {bartDirection} trains
+            </span>
+          )}
+          {!stationETDs.isFetching && (
+            <span className="status">
+              {currentBartStation} {bartDirection} trains{" "}
+              {stationETDs.at.fromNow()}
+            </span>
+          )}
+          <button id="reload" onClick={this.handleReload}>
+            Reload
+          </button>
+        </div>
         <div id="en-route-times">
           <ul id="bart-station-times">
             {stationsHome.map(([name, mins, abbr]) => (
@@ -107,7 +134,11 @@ class App extends Component {
             ))}
           </ul>
         </div>
-        {/* <TransferMagic /> */}
+        <p id="estimate-info">
+          Arrival estimates include {trainTime} minutes on train and{" "}
+          {walkingMinutes} minutes on foot.
+        </p>
+        <Link to="/transfer-magic">Transfer!</Link>
       </div>
     )
   }
@@ -119,4 +150,4 @@ const mapStateToProps = state => ({
   bartAdvisories: state.bartAdvisories,
 })
 
-export default connect(mapStateToProps)(App)
+export default connect(mapStateToProps)(Trip)

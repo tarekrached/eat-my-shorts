@@ -1,8 +1,8 @@
 body {
   font-family: Roboto, Helvetica, Arial, freesans, clean, sans-serif;
-  font-size: 12px;
+  font-size: 16px;
   overflow-x: hidden;
-  max-width: 220px;
+  max-width: 398px;
 }
 
 .train {
@@ -20,7 +20,7 @@ body {
 }
 
 .train span.minutes {
-  font-size: 14px;
+  font-size: 1.16rem;
   font-weight: bold;
 }
 
@@ -28,12 +28,14 @@ body {
   color: #888888;
 }
 
-.bart-trains .loading {
+.data-freshness {
   line-height: 1.5;
   color: #888888;
-  font-size: 10px;
+  font-size: 0.83rem;
 }
-
+.data-freshness button {
+  font-size: 1rem;
+}
 #bart-advisories {
   margin: 0.5rem 0;
 }
@@ -41,7 +43,7 @@ body {
 #estimate-info {
   margin-top: 1em;
   color: #888888;
-  font-size: 10px;
+  font-size: 0.83rem;
 }
 
 #muni {
@@ -50,7 +52,7 @@ body {
 
 #muni .pred:first-child {
   font-weight: bold;
-  font-size: 14px;
+  font-size: 1.16rem;
 }
 
 #muni .pred:not(:first-child) {
@@ -65,4 +67,8 @@ a:link,
 a:visited {
   text-decoration: none;
   color: #800040;
+}
+
+.transfer-magic .stations .station {
+  margin-bottom: 0.5em;
 }
