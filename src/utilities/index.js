@@ -1,5 +1,5 @@
 export const bartApiKey = "MW9S-E7SL-26DU-VV8V&"
-export const bartApiRoot = "http://api.bart.gov/api/"
+export const bartApiRoot = window.location.protocol + "//api.bart.gov/api/"
 
 export const bartStationETDsUrl = (station, dir = null) =>
   `${bartApiRoot}etd.aspx?cmd=etd&orig=${station}${

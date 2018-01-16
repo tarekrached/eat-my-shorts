@@ -25,5 +25,5 @@
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject"
   },
-  "homepage": "http://tarekrached.com/eat-my-shorts"
+  "homepage": "/eat-my-shorts"
 }
