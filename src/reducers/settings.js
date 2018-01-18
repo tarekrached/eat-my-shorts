@@ -4,16 +4,18 @@ const defaultState =
   new Date().getHours() < 12
     ? {
         currentBartStation: "NBRK",
+        bartDestination: "MONT",
+        bartMinutes: 25,
         bartDirection: "South",
         walkingMinutes: 5,
-        trainTime: 25,
       }
     : {
         currentBartStation: "MONT",
+        bartDestination: "NBRK",
+        bartMinutes: 25,
         bartDirection: "North",
-        walkingMinutes: 9,
-        trainTime: 25,
         trainColors: ["RED", "YELLOW"],
+        walkingMinutes: 9,
       }
 
 export default function settings(state = defaultState, action) {

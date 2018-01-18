@@ -32,3 +32,27 @@ export const stationsHome = [
   ["Berkeley", 2, "DBRK"],
   ["North Berkeley", 0, "NBRK"],
 ]
+
+export const radians = n => n * (Math.PI / 180)
+
+export const degrees = n => n * (180 / Math.PI)
+
+export const getBearing = ([startLong, startLat], [endLong, endLat]) => {
+  startLat = radians(startLat)
+  startLong = radians(startLong)
+  endLat = radians(endLat)
+  endLong = radians(endLong)
+
+  var dLong = endLong - startLong
+
+  var dPhi = Math.log(
+    Math.tan(endLat / 2.0 + Math.PI / 4.0) /
+      Math.tan(startLat / 2.0 + Math.PI / 4.0)
+  )
+  if (Math.abs(dLong) > Math.PI) {
+    if (dLong > 0.0) dLong = -(2.0 * Math.PI - dLong)
+    else dLong = 2.0 * Math.PI + dLong
+  }
+
+  return (degrees(Math.atan2(dLong, dPhi)) + 360.0) % 360.0
+}

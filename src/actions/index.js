@@ -13,3 +13,10 @@ export {
   RECEIVE_BART_ADVISORIES_ERROR,
   fetchBartAdvisories,
 } from "./fetch-bart-advisories"
+
+export {
+  REQUEST_USER_LOCATION,
+  RECEIVE_USER_LOCATION,
+  RECEIVE_USER_LOCATION_ERROR,
+  getUserLocation,
+} from "./get-user-location"

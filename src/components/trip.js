@@ -37,7 +37,6 @@ class Trip extends Component {
   handleReload = e => this.load()
 
   tick = () => {
-    console.log(this.state.counter)
     this.setState({
       counter: this.state.counter + 1,
     })
@@ -49,7 +48,7 @@ class Trip extends Component {
         currentBartStation,
         bartDirection,
         walkingMinutes,
-        trainTime,
+        bartMinutes,
       },
       stationETDs,
       bartAdvisories,
@@ -135,7 +134,7 @@ class Trip extends Component {
           </ul>
         </div>
         <p id="estimate-info">
-          Arrival estimates include {trainTime} minutes on train and{" "}
+          Arrival estimates include {bartMinutes} minutes on train and{" "}
           {walkingMinutes} minutes on foot.
         </p>
         <Link to="/transfer-magic">Transfer!</Link>
