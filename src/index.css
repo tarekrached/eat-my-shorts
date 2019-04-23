@@ -5,6 +5,11 @@ body {
   max-width: 398px;
 }
 
+.top-menu {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
 .train {
   margin-bottom: 0.5em;
   white-space: nowrap;

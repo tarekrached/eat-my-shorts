@@ -2,9 +2,13 @@ import React, { Component } from "react"
 import { connect } from "react-redux"
 import { Link } from "react-router-dom"
 
-import { fetchStationETDs, fetchBartAdvisories } from "../actions"
+import {
+  fetchStationETDs,
+  fetchBartAdvisories,
+  updateSettings,
+} from "../actions"
 import { currentStationEtdsSelector } from "../selectors"
-import { stationsHome } from "../utilities"
+import { stationsHome, settingsPresets } from "../utilities"
 
 class Trip extends Component {
   state = {
@@ -12,11 +16,8 @@ class Trip extends Component {
     counter: 0,
   }
 
-  componentWillMount() {
-    this.load()
-  }
-
   componentDidMount() {
+    this.load()
     this.setState({ timer: setInterval(this.tick, 3000) })
   }
 
@@ -41,10 +42,24 @@ class Trip extends Component {
       counter: this.state.counter + 1,
     })
   }
+  switchPreset = () => {
+    const newSettings = settingsPresets.find(
+      d => d.preset !== this.props.settings.preset
+    )
+
+    this.props.dispatch(updateSettings(newSettings))
+    this.props.dispatch(
+      fetchStationETDs(
+        newSettings.currentBartStation,
+        newSettings.bartDirection
+      )
+    )
+  }
 
   render() {
     const {
       settings: {
+        preset,
         currentBartStation,
         bartDirection,
         walkingMinutes,
@@ -56,6 +71,13 @@ class Trip extends Component {
 
     return (
       <div className="bart-home">
+        <div className="top-menu">
+          <div>
+            preset: {preset} <button onClick={this.switchPreset}>switch</button>
+          </div>
+
+          <Link to="/transfer-magic">Transfer!</Link>
+        </div>
         <div className="bart-trains">
           {stationETDs.trains && (
             <div id="bart-trains">
@@ -118,9 +140,7 @@ class Trip extends Component {
               {stationETDs.at.fromNow()}
             </span>
           )}
-          <button id="reload" onClick={this.handleReload}>
-            Reload
-          </button>
+          <button onClick={this.handleReload}>Reload</button>
         </div>
         <div id="en-route-times">
           <ul id="bart-station-times">
@@ -128,7 +148,8 @@ class Trip extends Component {
               <li key={abbr}>
                 <a href={`https://m.bart.gov/schedules/eta?stn=${abbr}`}>
                   {name}
-                </a>: {mins} mins
+                </a>
+                : {mins} mins
               </li>
             ))}
           </ul>
@@ -137,7 +158,6 @@ class Trip extends Component {
           Arrival estimates include {bartMinutes} minutes on train and{" "}
           {walkingMinutes} minutes on foot.
         </p>
-        <Link to="/transfer-magic">Transfer!</Link>
       </div>
     )
   }

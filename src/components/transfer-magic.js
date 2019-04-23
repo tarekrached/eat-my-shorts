@@ -27,6 +27,7 @@ class App extends Component {
     }
     return (
       <div className="transfer-magic">
+        <Link to="/">Home</Link>
         <div className="stations">
           {stations.map(({ station, targetTrains, sourceTrains }) => (
             <div key={station} className="station">

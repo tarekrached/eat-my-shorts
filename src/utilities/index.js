@@ -56,3 +56,23 @@ export const getBearing = ([startLong, startLat], [endLong, endLat]) => {
 
   return (degrees(Math.atan2(dLong, dPhi)) + 360.0) % 360.0
 }
+
+export const settingsPresets = [
+  {
+    preset: "home2Work",
+    currentBartStation: "NBRK",
+    bartDestination: "MONT",
+    bartMinutes: 25,
+    bartDirection: "South",
+    walkingMinutes: 5,
+  },
+  {
+    preset: "work2Home",
+    currentBartStation: "MONT",
+    bartDestination: "NBRK",
+    bartMinutes: 25,
+    bartDirection: "North",
+    trainColors: ["RED", "YELLOW"],
+    walkingMinutes: 9,
+  },
+]

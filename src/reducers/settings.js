@@ -1,22 +1,8 @@
 import { UPDATE_SETTINGS } from "../actions/"
+import { settingsPresets } from "../utilities"
 
-const defaultState =
-  new Date().getHours() < 12
-    ? {
-        currentBartStation: "NBRK",
-        bartDestination: "MONT",
-        bartMinutes: 25,
-        bartDirection: "South",
-        walkingMinutes: 5,
-      }
-    : {
-        currentBartStation: "MONT",
-        bartDestination: "NBRK",
-        bartMinutes: 25,
-        bartDirection: "North",
-        trainColors: ["RED", "YELLOW"],
-        walkingMinutes: 9,
-      }
+const preset = new Date().getHours() < 12 ? "home2Work" : "work2Home"
+const defaultState = settingsPresets.find(d => d.preset === preset)
 
 export default function settings(state = defaultState, action) {
   switch (action.type) {
