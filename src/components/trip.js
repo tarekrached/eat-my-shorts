@@ -146,7 +146,7 @@ class Trip extends Component {
           <ul id="bart-station-times">
             {stationsHome.map(([name, mins, abbr]) => (
               <li key={abbr}>
-                <a href={`https://m.bart.gov/schedules/eta?stn=${abbr}`}>
+                <a href={`https://www.bart.gov/schedules/eta/${abbr}`}>
                   {name}
                 </a>
                 : {mins} mins
