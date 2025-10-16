@@ -64,7 +64,7 @@ export const settingsPresets = [
     bartDestination: "MONT",
     bartMinutes: 25,
     bartDirection: "South",
-    walkingMinutes: 5,
+    walkingMinutes: 10,
   },
   {
     preset: "work2Home",
