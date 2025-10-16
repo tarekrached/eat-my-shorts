@@ -36,7 +36,7 @@ class App extends Component {
           {stations.map(({ station, targetTrains, sourceTrains }) => (
             <div key={station} className="station">
               <div>
-                <a href={`https://m.bart.gov/schedules/eta?stn=${station}`}>
+                <a href={`https://www.bart.gov/schedules/eta/${station}`}>
                   {station}
                 </a>
               </div>
