@@ -11,7 +11,8 @@ export interface Settings {
   bartDestination?: string
   bartMinutes: number
   bartDirection: Direction
-  walkingMinutes: number
+  homeWalkingMinutes: number  // Walking time: home ↔ North Berkeley
+  workWalkingMinutes: number  // Walking time: office ↔ Montgomery
   trainColors?: TrainColor[]
 }
 

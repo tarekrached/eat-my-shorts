@@ -11,7 +11,9 @@ export const currentStationEtdsSelector = createSelector(
       currentBartStation,
       trainColors,
       bartMinutes,
-      walkingMinutes,
+      homeWalkingMinutes,
+      workWalkingMinutes,
+      preset,
     } = settings
 
     if (
@@ -27,6 +29,9 @@ export const currentStationEtdsSelector = createSelector(
     }
 
     const stationData = stationETDs[currentBartStation]
+    const isHome2Work = preset === 'home2Work'
+    const originWalking = isHome2Work ? homeWalkingMinutes : workWalkingMinutes
+    const destWalking = isHome2Work ? workWalkingMinutes : homeWalkingMinutes
 
     return {
       at: stationData.at,
@@ -37,7 +42,8 @@ export const currentStationEtdsSelector = createSelector(
         )
         .map((t) => ({
           ...t,
-          etd: t.at.add(bartMinutes + walkingMinutes, 'minutes'),
+          leaveBy: t.at.subtract(originWalking, 'minutes'),
+          etd: t.at.add(bartMinutes + destWalking, 'minutes'),
         })),
       loading: stationData.isFetching,
       settings,

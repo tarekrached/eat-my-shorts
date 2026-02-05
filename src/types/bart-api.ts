@@ -44,6 +44,7 @@ export interface TrainEstimate {
   limited: string
   at: Dayjs // Departure time
   etd?: Dayjs // Estimated time to destination (computed)
+  leaveBy?: Dayjs // Time to leave current location (computed)
 }
 
 export interface StationETD {

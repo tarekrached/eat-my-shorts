@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useSelector } from 'react-redux'
+import dayjs from 'dayjs'
 import { fetchStationETDs } from '../store/stationETDsSlice'
 import { fetchBartAdvisories } from '../store/bartAdvisoriesSlice'
 import { updateSettings } from '../store/settingsSlice'
@@ -58,7 +59,8 @@ function Trip() {
     preset,
     currentBartStation,
     bartDirection,
-    walkingMinutes,
+    homeWalkingMinutes,
+    workWalkingMinutes,
     bartMinutes,
   } = settings
 
@@ -74,20 +76,29 @@ function Trip() {
       <div className="bart-trains">
         {stationETDs.trains && (
           <div id="bart-trains">
-            {stationETDs.trains.map((train, i) => (
-              <div className="train" key={i}>
+            {stationETDs.trains.map((train, i) => {
+              const now = dayjs()
+              const leaveInMinutes = train.leaveBy?.diff(now, 'minute')
+              const trainInMinutes = train.at.diff(now, 'minute')
+              const isMissed = leaveInMinutes !== undefined && leaveInMinutes < 0
+              return (
+              <div className={`train${isMissed ? ' missed' : ''}`} key={i}>
                 <span
                   className="color"
                   style={{ backgroundColor: train.hexcolor }}
                 />{' '}
-                <span className="minutes">{train.at.fromNow(true)}</span>{' '}
+                <span className={`leave-by${isMissed ? ' missed' : ''}`}>
+                  🚶 {leaveInMinutes}<span className="unit">m</span>
+                </span>{' '}
+                <span className="train-departs">🚆 {trainInMinutes}<span className="unit">m</span></span>{' '}
                 <span className="destination">{train.destination}</span>{' '}
                 <span className="length">{train.length} car</span>{' '}
                 <span className="home-time">
                   {train.etd?.format('h:mm a')}
                 </span>
               </div>
-            ))}
+              )}
+            )}
           </div>
         )}
       </div>
@@ -131,8 +142,8 @@ function Trip() {
         </ul>
       </div>
       <p id="estimate-info">
-        Arrival estimates include {bartMinutes} minutes on train and{' '}
-        {walkingMinutes} minutes on foot.
+        Arrival estimates include {bartMinutes} min on train,{' '}
+        {homeWalkingMinutes} min walk (home), {workWalkingMinutes} min walk (work).
       </p>
     </div>
   )
