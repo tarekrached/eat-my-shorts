@@ -73,7 +73,8 @@ export const settingsPresets: Settings[] = [
     bartDestination: 'MONT',
     bartMinutes: 25,
     bartDirection: 'South',
-    walkingMinutes: 10,
+    homeWalkingMinutes: 9,
+    workWalkingMinutes: 10,
   },
   {
     preset: 'work2Home',
@@ -82,6 +83,7 @@ export const settingsPresets: Settings[] = [
     bartMinutes: 25,
     bartDirection: 'North',
     trainColors: ['RED', 'YELLOW'],
-    walkingMinutes: 9,
+    homeWalkingMinutes: 9,
+    workWalkingMinutes: 10,
   },
 ]

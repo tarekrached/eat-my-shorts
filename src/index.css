@@ -15,6 +15,11 @@ body {
   white-space: nowrap;
 }
 
+.train.missed .leave-by {
+  text-decoration: line-through;
+  color: #999;
+}
+
 .train span.color {
   display: inline-block;
   width: 0.75em;
@@ -24,9 +29,18 @@ body {
   margin-right: 0.25em;
 }
 
-.train span.minutes {
+.train span.leave-by {
+  font-weight: bold;
+  color: #333;
+}
+
+.train span.train-departs {
   font-size: 1.16rem;
   font-weight: bold;
+}
+
+.train .unit {
+  color: #888;
 }
 
 .train span.length {
