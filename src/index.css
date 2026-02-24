@@ -97,35 +97,66 @@ a:visited {
 .settings-page {
   padding: 0 0.25rem;
 }
+
+.settings-page .top-menu {
+  align-items: center;
+}
+
 .settings-section {
   margin-bottom: 1rem;
 }
+
 .settings-field {
   margin-bottom: 0.5rem;
 }
+
 .settings-field label {
   display: block;
-  font-size: 0.9rem;
+  font-size: 0.83rem;
+  color: #555;
   margin-bottom: 0.15rem;
 }
-.settings-field select,
+
+.settings-field input[type='text'],
 .settings-field input[type='number'],
-.settings-field input[type='text'] {
+.settings-field select {
   font-size: 1rem;
-  padding: 0.25rem;
+  padding: 0.1rem 0.25rem;
+  max-width: 100%;
 }
+
 .direction-toggle button {
-  padding: 0.25rem 0.75rem;
-  margin-right: 0.25rem;
-  border: 1px solid #ccc;
-  background: #fff;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.9rem;
+  background: none;
+  border: 1px solid #aaa;
   cursor: pointer;
 }
-.direction-toggle button.active {
-  background: #0066cc;
-  color: #fff;
-  border-color: #0066cc;
+
+.direction-toggle button:first-child {
+  border-right: none;
+  border-radius: 3px 0 0 3px;
 }
+
+.direction-toggle button:last-child {
+  border-radius: 0 3px 3px 0;
+}
+
+.direction-toggle button.active {
+  background: #800040;
+  color: #fff;
+  border-color: #800040;
+}
+
 .color-filters {
   margin-top: 0.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.color-filters label {
+  display: inline;
+  color: inherit;
+  font-size: 1rem;
 }

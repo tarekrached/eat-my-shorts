@@ -68,10 +68,9 @@ function Trip() {
         <div>
           {activePresetName} <button onClick={switchPreset}>switch</button>
         </div>
-        <div>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           <Link to="/transfer-magic">Transfer!</Link>
-          {' '}
-          <Link to="/settings">&#9881;</Link>
+          <Link to="/settings" title="Settings">&#9881;</Link>
         </div>
       </div>
       <div className="bart-trains">
