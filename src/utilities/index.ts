@@ -1,4 +1,5 @@
-import type { TripPreset, Settings } from '../types'
+import type { TripPreset, Settings, Direction } from '../types'
+import bartRoutes from '../data/bart-routes.json'
 
 export const bartApiKey = 'MW9S-E7SL-26DU-VV8V&'
 export const bartApiRoot = window.location.protocol + '//api.bart.gov/api/'
@@ -9,6 +10,35 @@ export const bartStationETDsUrl = (station: string, dir: string | null = null): 
   }&key=${bartApiKey}&json=y`
 
 export const bartAdvisoriesUrl = `${bartApiRoot}bsa.aspx?cmd=bsa&key=${bartApiKey}&json=y`
+
+export const bartScheduleUrl = (orig: string, dest: string): string =>
+  `${bartApiRoot}sched.aspx?cmd=depart&orig=${orig}&dest=${dest}&date=now&key=${bartApiKey}&json=y`
+
+// Infer the BART direction (North/South) needed at `from` to reach `to`,
+// using the bundled route data. Returns null if no direct route connects them.
+export const inferDirection = (from: string, to: string): Direction | null => {
+  for (const route of bartRoutes) {
+    const stations = route.config.station as string[]
+    const fromIdx = stations.indexOf(from)
+    const toIdx = stations.indexOf(to)
+    if (fromIdx !== -1 && toIdx !== -1 && fromIdx < toIdx) {
+      return route.direction as Direction
+    }
+  }
+  return null
+}
+
+// Fetch the scheduled travel time in minutes between two stations via the BART API.
+export const fetchTravelMinutes = async (orig: string, dest: string): Promise<number> => {
+  const res = await fetch(bartScheduleUrl(orig, dest))
+  if (!res.ok) throw new Error(`BART schedule API error: ${res.status}`)
+  const data = await res.json()
+  const tripRaw = data?.root?.schedule?.request?.trip
+  const trip = Array.isArray(tripRaw) ? tripRaw[0] : tripRaw
+  const minutes = parseInt(trip?.['@tripTime'])
+  if (isNaN(minutes)) throw new Error('Could not parse trip time from BART API')
+  return minutes
+}
 
 export const checkFetchStatus = (response: Response): Response => {
   if (response.status >= 200 && response.status < 300) {
