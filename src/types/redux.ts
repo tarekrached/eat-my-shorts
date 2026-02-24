@@ -2,17 +2,28 @@ import type { Dayjs } from 'dayjs'
 import type { TrainEstimate, UserPosition } from './bart-api'
 
 export type Direction = 'North' | 'South'
-export type Preset = 'home2Work' | 'work2Home'
 export type TrainColor = 'RED' | 'YELLOW' | 'BLUE' | 'GREEN' | 'ORANGE'
 
-export interface Settings {
-  preset: Preset
+export interface TripPreset {
+  name: string
   currentBartStation: string
-  bartDestination?: string
-  bartMinutes: number
   bartDirection: Direction
-  homeWalkingMinutes: number  // Walking time: home ↔ North Berkeley
-  workWalkingMinutes: number  // Walking time: office ↔ Montgomery
+  bartMinutes: number
+}
+
+export interface Settings {
+  activePresetIndex: 0 | 1
+  presets: [TripPreset, TripPreset]
+  autoSwitch: boolean
+  autoSwitchHour: number
+  homeStation: string
+  workStation: string
+  homeWalkingMinutes: number
+  workWalkingMinutes: number
+  // Active/flattened fields (copied from selected preset; read by existing selectors)
+  currentBartStation: string
+  bartDirection: Direction
+  bartMinutes: number
   trainColors?: TrainColor[]
 }
 

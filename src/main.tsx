@@ -9,6 +9,7 @@ import './index.css'
 import { store } from './store'
 import Trip from './components/Trip'
 import TransferMagic from './components/TransferMagic'
+import Settings from './components/Settings'
 
 // Configure dayjs
 dayjs.extend(relativeTime)
@@ -21,6 +22,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Routes>
             <Route path="/" element={<Trip />} />
             <Route path="/transfer-magic" element={<TransferMagic />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
         </div>
       </Router>
