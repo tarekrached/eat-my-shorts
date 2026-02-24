@@ -230,10 +230,38 @@ eat-my-shorts/
 
 ## Deployment
 
-### GitHub Pages
-- **Script**: `npm run deploy` (runs build then pushes to gh-pages branch)
-- **Homepage**: Set to "." in package.json for relative paths
-- **URL**: Hosted at custom domain (recent commit suggests `custom domain` setup)
+### Live Site
+- **URL**: https://tarekrached.net/eat-my-shorts/
+- The site is served via GitHub Pages from the `tarekrached/homepage` repo
+- This repo (`eat-my-shorts`) is a **submodule** in the homepage repo, pointing to the `gh-pages` branch
+
+### Deployment Steps
+To deploy changes to production:
+
+1. **Build and push to gh-pages branch:**
+   ```bash
+   npm run deploy
+   ```
+   This builds the app and pushes the dist files to the `gh-pages` branch.
+
+2. **Update the submodule in the homepage repo:**
+
+   First, check if the homepage repo is checked out as a sibling of this repo:
+   ```bash
+   ls ../homepage
+   ```
+
+   If it exists, update the submodule:
+   ```bash
+   cd ../homepage
+   git submodule update --remote eat-my-shorts
+   git add eat-my-shorts
+   git commit -m "Update eat-my-shorts submodule"
+   git push
+   ```
+   This updates the homepage repo to point to the latest gh-pages commit.
+
+GitHub Pages will automatically rebuild and deploy the homepage site after the push.
 
 ### Progressive Web App (PWA)
 - **Service Worker**: Registered in production for offline capability and caching
