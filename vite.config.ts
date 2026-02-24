@@ -26,7 +26,7 @@ export default defineConfig({
       }
     })
   ],
-  base: './',
+  base: '/eat-my-shorts/',
   build: {
     outDir: 'dist',
     sourcemap: true
