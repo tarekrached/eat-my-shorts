@@ -93,6 +93,13 @@ a:visited {
   margin-bottom: 0.5em;
 }
 
+.settings-link {
+  display: inline-block;
+  font-size: 1.25rem;
+  color: #999;
+  margin-top: 0.5rem;
+}
+
 /* Settings page */
 .settings-page {
   padding: 0 0.25rem;
@@ -148,15 +155,25 @@ a:visited {
   border-color: #800040;
 }
 
-.color-filters {
-  margin-top: 0.25rem;
+.line-filters {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  margin-top: 0.25rem;
 }
 
-.color-filters label {
-  display: inline;
-  color: inherit;
-  font-size: 1rem;
+.line-filter {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.95rem !important;
+  color: #333 !important;
+}
+
+.line-swatch {
+  display: inline-block;
+  width: 0.75em;
+  height: 0.75em;
+  border: 1px solid #666;
+  border-radius: 2px;
 }

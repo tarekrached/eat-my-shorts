@@ -92,7 +92,6 @@ export const defaultPresets: [TripPreset, TripPreset] = [
     currentBartStation: 'MONT',
     bartMinutes: 25,
     bartDirection: 'North',
-    trainColors: ['RED', 'YELLOW'],
   },
 ]
 
@@ -116,6 +115,5 @@ export const buildInitialSettings = (
     currentBartStation: active.currentBartStation,
     bartDirection: active.bartDirection,
     bartMinutes: active.bartMinutes,
-    trainColors: active.trainColors,
   }
 }

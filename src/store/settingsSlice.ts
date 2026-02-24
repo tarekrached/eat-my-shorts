@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import type { Settings, TripPreset } from '../types'
+import type { Settings, TripPreset, TrainColor } from '../types'
 import { defaultPresets, buildInitialSettings } from '../utilities'
 
 const STORAGE_KEY = 'ems-settings'
@@ -12,6 +12,7 @@ interface PersistedSettings {
   workStation: string
   homeWalkingMinutes: number
   workWalkingMinutes: number
+  trainColors?: TrainColor[]
 }
 
 const loadFromStorage = (): PersistedSettings | null => {
@@ -34,6 +35,7 @@ const saveToStorage = (state: Settings): void => {
       workStation: state.workStation,
       homeWalkingMinutes: state.homeWalkingMinutes,
       workWalkingMinutes: state.workWalkingMinutes,
+      trainColors: state.trainColors,
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted))
   } catch {
@@ -52,6 +54,7 @@ const initialState: Settings = {
   ),
   homeStation: saved?.homeStation ?? 'NBRK',
   workStation: saved?.workStation ?? 'MONT',
+  trainColors: saved?.trainColors,
 }
 
 const settingsSlice = createSlice({
@@ -67,7 +70,6 @@ const settingsSlice = createSlice({
         currentBartStation: preset.currentBartStation,
         bartDirection: preset.bartDirection,
         bartMinutes: preset.bartMinutes,
-        trainColors: preset.trainColors,
       }
       saveToStorage(next)
       return next
@@ -88,7 +90,6 @@ const settingsSlice = createSlice({
         currentBartStation: active.currentBartStation,
         bartDirection: active.bartDirection,
         bartMinutes: active.bartMinutes,
-        trainColors: active.trainColors,
       }
       saveToStorage(next)
       return next
@@ -114,6 +115,11 @@ const settingsSlice = createSlice({
       saveToStorage(next)
       return next
     },
+    setTrainColors: (state, action: PayloadAction<TrainColor[] | undefined>) => {
+      const next: Settings = { ...state, trainColors: action.payload }
+      saveToStorage(next)
+      return next
+    },
     // Kept for backward compatibility (used by TransferMagic and others)
     updateSettings: (state, action: PayloadAction<Partial<Settings>>) => {
       return { ...state, ...action.payload }
@@ -121,6 +127,6 @@ const settingsSlice = createSlice({
   },
 })
 
-export const { setActivePreset, updatePreset, setAutoSwitch, saveStations, updateSettings } =
+export const { setActivePreset, updatePreset, setAutoSwitch, saveStations, setTrainColors, updateSettings } =
   settingsSlice.actions
 export default settingsSlice.reducer

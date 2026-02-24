@@ -68,10 +68,7 @@ function Trip() {
         <div>
           {activePresetName} <button onClick={switchPreset}>switch</button>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <Link to="/transfer-magic">Transfer!</Link>
-          <Link to="/settings" title="Settings">&#9881;</Link>
-        </div>
+        <Link to="/transfer-magic">Transfer!</Link>
       </div>
       <div className="bart-trains">
         {stationETDs.trains && (
@@ -133,6 +130,7 @@ function Trip() {
         Arrival estimates include {bartMinutes} min on train,{' '}
         {homeWalkingMinutes} min walk (home), {workWalkingMinutes} min walk (work).
       </p>
+      <Link to="/settings" title="Settings" className="settings-link">&#9881;</Link>
     </div>
   )
 }

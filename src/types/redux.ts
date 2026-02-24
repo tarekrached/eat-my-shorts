@@ -9,7 +9,6 @@ export interface TripPreset {
   currentBartStation: string
   bartDirection: Direction
   bartMinutes: number
-  trainColors?: TrainColor[]
 }
 
 export interface Settings {

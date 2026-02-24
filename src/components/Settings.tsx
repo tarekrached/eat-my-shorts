@@ -1,13 +1,22 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { updatePreset, setAutoSwitch, saveStations } from '../store/settingsSlice'
+import { updatePreset, setAutoSwitch, saveStations, setTrainColors } from '../store/settingsSlice'
 import type { RootState, AppDispatch } from '../store'
+import type { TrainColor } from '../types'
 import { inferDirection, fetchTravelMinutes } from '../utilities'
 import bartStations from '../data/bart-stations.json'
 
 const stationName = (abbr: string) =>
   bartStations.find((s) => s.abbr === abbr)?.name ?? abbr
+
+const LINE_COLORS: { key: TrainColor; label: string; hex: string }[] = [
+  { key: 'RED', label: 'Red', hex: '#ff0000' },
+  { key: 'ORANGE', label: 'Orange', hex: '#ff9933' },
+  { key: 'YELLOW', label: 'Yellow', hex: '#ffff33' },
+  { key: 'GREEN', label: 'Green', hex: '#339933' },
+  { key: 'BLUE', label: 'Blue', hex: '#0099cc' },
+]
 
 function Settings() {
   const dispatch = useDispatch<AppDispatch>()
@@ -20,6 +29,16 @@ function Settings() {
   const [workWalkingMinutes, setWorkWalkingMinutes] = useState(settings.workWalkingMinutes)
   const [autoSwitch, setAutoSwitchLocal] = useState(settings.autoSwitch)
   const [autoSwitchHour, setAutoSwitchHour] = useState(settings.autoSwitchHour)
+  const allColors = LINE_COLORS.map((c) => c.key)
+  const [trainColors, setLocalTrainColors] = useState<TrainColor[]>(
+    settings.trainColors ?? allColors
+  )
+
+  const toggleColor = (color: TrainColor) => {
+    setLocalTrainColors((prev) =>
+      prev.includes(color) ? prev.filter((c) => c !== color) : [...prev, color]
+    )
+  }
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -45,6 +64,7 @@ function Settings() {
     setSaving(true)
     try {
       const travelMinutes = await fetchTravelMinutes(homeStation, workStation)
+      const colors = trainColors.length === allColors.length ? undefined : trainColors
 
       dispatch(
         updatePreset({
@@ -69,6 +89,7 @@ function Settings() {
         })
       )
       dispatch(setAutoSwitch({ autoSwitch, autoSwitchHour }))
+      dispatch(setTrainColors(colors))
       dispatch(
         saveStations({
           homeStation,
@@ -163,6 +184,23 @@ function Settings() {
             </label>
           </div>
         )}
+      </div>
+
+      <div className="settings-field" style={{ marginTop: '0.75rem' }}>
+        <label>Show train lines</label>
+        <div className="line-filters">
+          {LINE_COLORS.map(({ key, label, hex }) => (
+            <label key={key} className="line-filter">
+              <input
+                type="checkbox"
+                checked={trainColors.includes(key)}
+                onChange={() => toggleColor(key)}
+              />
+              <span className="line-swatch" style={{ backgroundColor: hex }} />
+              {label}
+            </label>
+          ))}
+        </div>
       </div>
 
       {error && (
