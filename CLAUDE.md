@@ -25,9 +25,9 @@
 - **Reselect 4.0.0**: Memoized selectors for Redux state
 
 ### Build & Deployment
-- **React-Scripts 3.0.0**: Create React App build tooling
-- **GH-Pages 2.0.1**: Deployment to GitHub Pages
-- **Node 10+** (implicit from package.json)
+- **Vite 5.4**: Build tooling
+- **GitHub Actions**: CI/CD pipeline deploys to GitHub Pages on push to `main`
+- **Node 20** (used in CI)
 
 ## Project Structure
 
@@ -231,37 +231,18 @@ eat-my-shorts/
 ## Deployment
 
 ### Live Site
-- **URL**: https://tarekrached.net/eat-my-shorts/
-- The site is served via GitHub Pages from the `tarekrached/homepage` repo
-- This repo (`eat-my-shorts`) is a **submodule** in the homepage repo, pointing to the `gh-pages` branch
+- **URL**: https://tarekrached.github.io/eat-my-shorts/
+- Deployed via GitHub Actions (`.github/workflows/deploy.yml`) on push to `main`
+- GitHub Pages source is set to "GitHub Actions" (not branch-based)
 
 ### Deployment Steps
-To deploy changes to production:
+Deployment is fully automated. Just push (or merge a PR) to `main`:
 
-1. **Build and push to gh-pages branch:**
-   ```bash
-   npm run deploy
-   ```
-   This builds the app and pushes the dist files to the `gh-pages` branch.
+1. GitHub Actions runs `npm ci && npm run build`
+2. The `dist/` directory is uploaded as a Pages artifact
+3. `deploy-pages` action publishes it to GitHub Pages
 
-2. **Update the submodule in the homepage repo:**
-
-   First, check if the homepage repo is checked out as a sibling of this repo:
-   ```bash
-   ls ../homepage
-   ```
-
-   If it exists, update the submodule:
-   ```bash
-   cd ../homepage
-   git submodule update --remote eat-my-shorts
-   git add eat-my-shorts
-   git commit -m "Update eat-my-shorts submodule"
-   git push
-   ```
-   This updates the homepage repo to point to the latest gh-pages commit.
-
-GitHub Pages will automatically rebuild and deploy the homepage site after the push.
+To trigger a manual deploy, use the "Run workflow" button on the Actions tab (`workflow_dispatch`).
 
 ### Progressive Web App (PWA)
 - **Service Worker**: Registered in production for offline capability and caching
@@ -270,20 +251,18 @@ GitHub Pages will automatically rebuild and deploy the homepage site after the p
 - **Start URL**: `./index.html`
 
 ### Build Output
-- Optimized bundle via React-Scripts
+- Optimized bundle via Vite
 - Service worker for offline access and asset caching
 - Static assets (data files) bundled with app
+- Base path: `/eat-my-shorts/` (configured in `vite.config.ts`)
 
 ## Development Workflow
 
 ### Scripts
 ```bash
-npm start          # Start dev server (localhost:3000)
-npm run build      # Build optimized production bundle
-npm test           # Run tests (jsdom environment)
-npm run eject      # Eject from Create React App (irreversible)
-npm run deploy     # Build and deploy to GitHub Pages
-npm run predeploy  # Runs before deploy (triggers build)
+npm run dev        # Start Vite dev server
+npm run build      # Build optimized production bundle (tsc && vite build)
+npm run preview    # Preview production build locally
 ```
 
 ### Key Patterns
