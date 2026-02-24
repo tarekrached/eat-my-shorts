@@ -13,7 +13,7 @@ export const currentStationEtdsSelector = createSelector(
       bartMinutes,
       homeWalkingMinutes,
       workWalkingMinutes,
-      preset,
+      activePresetIndex,
     } = settings
 
     if (
@@ -29,7 +29,7 @@ export const currentStationEtdsSelector = createSelector(
     }
 
     const stationData = stationETDs[currentBartStation]
-    const isHome2Work = preset === 'home2Work'
+    const isHome2Work = activePresetIndex === 0
     const originWalking = isHome2Work ? homeWalkingMinutes : workWalkingMinutes
     const destWalking = isHome2Work ? workWalkingMinutes : homeWalkingMinutes
 

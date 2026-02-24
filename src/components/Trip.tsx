@@ -4,9 +4,8 @@ import { useSelector } from 'react-redux'
 import dayjs from 'dayjs'
 import { fetchStationETDs } from '../store/stationETDsSlice'
 import { fetchBartAdvisories } from '../store/bartAdvisoriesSlice'
-import { updateSettings } from '../store/settingsSlice'
+import { setActivePreset } from '../store/settingsSlice'
 import { currentStationEtdsSelector } from '../selectors'
-import { stationsHome, settingsPresets } from '../utilities'
 import type { RootState, AppDispatch } from '../store'
 import { useDispatch } from 'react-redux'
 
@@ -40,23 +39,20 @@ function Trip() {
   const handleReload = () => load()
 
   const switchPreset = () => {
-    const newSettings = settingsPresets.find(
-      (d) => d.preset !== settings.preset
+    const nextIndex: 0 | 1 = settings.activePresetIndex === 0 ? 1 : 0
+    dispatch(setActivePreset(nextIndex))
+    const nextPreset = settings.presets[nextIndex]
+    dispatch(
+      fetchStationETDs({
+        station: nextPreset.currentBartStation,
+        dir: nextPreset.bartDirection,
+      })
     )
-
-    if (newSettings) {
-      dispatch(updateSettings(newSettings))
-      dispatch(
-        fetchStationETDs({
-          station: newSettings.currentBartStation,
-          dir: newSettings.bartDirection,
-        })
-      )
-    }
   }
 
   const {
-    preset,
+    activePresetIndex,
+    presets,
     currentBartStation,
     bartDirection,
     homeWalkingMinutes,
@@ -64,14 +60,19 @@ function Trip() {
     bartMinutes,
   } = settings
 
+  const activePresetName = presets[activePresetIndex].name
+
   return (
     <div className="bart-home">
       <div className="top-menu">
         <div>
-          preset: {preset} <button onClick={switchPreset}>switch</button>
+          {activePresetName} <button onClick={switchPreset}>switch</button>
         </div>
-
-        <Link to="/transfer-magic">Transfer!</Link>
+        <div>
+          <Link to="/transfer-magic">Transfer!</Link>
+          {' '}
+          <Link to="/settings">&#9881;</Link>
+        </div>
       </div>
       <div className="bart-trains">
         {stationETDs.trains && (
@@ -128,18 +129,6 @@ function Trip() {
           </span>
         )}
         <button onClick={handleReload}>Reload</button>
-      </div>
-      <div id="en-route-times">
-        <ul id="bart-station-times">
-          {stationsHome.map(([name, mins, abbr]) => (
-            <li key={abbr}>
-              <a href={`https://www.bart.gov/schedules/eta/${abbr}`}>
-                {name}
-              </a>
-              : {mins} mins
-            </li>
-          ))}
-        </ul>
       </div>
       <p id="estimate-info">
         Arrival estimates include {bartMinutes} min on train,{' '}

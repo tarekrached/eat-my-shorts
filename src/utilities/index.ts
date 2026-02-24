@@ -1,4 +1,4 @@
-import type { Settings } from '../types'
+import type { TripPreset, Settings } from '../types'
 
 export const bartApiKey = 'MW9S-E7SL-26DU-VV8V&'
 export const bartApiRoot = window.location.protocol + '//api.bart.gov/api/'
@@ -18,22 +18,6 @@ export const checkFetchStatus = (response: Response): Response => {
   error.response = response
   throw error
 }
-
-export const stationsHome: [string, number, string][] = [
-  ['24th Mission', 32, '24TH'],
-  ['16th Mission', 30, '16TH'],
-  ['Civic Center', 28, 'CIVC'],
-  ['Powell', 26, 'POWL'],
-  ['Montgomery', 25, 'MONT'],
-  ['Embarcadero', 23, 'EMBR'],
-  ['West Oakland', 16, 'WOAK'],
-  ['12th', 13, '12TH'],
-  ['19th', 11, '19TH'],
-  ['MacArthur', 8, 'MCAR'],
-  ['Ashby', 5, 'ASHB'],
-  ['Berkeley', 2, 'DBRK'],
-  ['North Berkeley', 0, 'NBRK'],
-]
 
 export const radians = (n: number): number => n * (Math.PI / 180)
 
@@ -66,24 +50,42 @@ export const getBearing = (
   return (degrees(Math.atan2(dLong, dPhi)) + 360.0) % 360.0
 }
 
-export const settingsPresets: Settings[] = [
+export const defaultPresets: [TripPreset, TripPreset] = [
   {
-    preset: 'home2Work',
+    name: 'home → work',
     currentBartStation: 'NBRK',
-    bartDestination: 'MONT',
     bartMinutes: 25,
     bartDirection: 'South',
-    homeWalkingMinutes: 9,
-    workWalkingMinutes: 10,
   },
   {
-    preset: 'work2Home',
+    name: 'work → home',
     currentBartStation: 'MONT',
-    bartDestination: 'NBRK',
     bartMinutes: 25,
     bartDirection: 'North',
     trainColors: ['RED', 'YELLOW'],
-    homeWalkingMinutes: 9,
-    workWalkingMinutes: 10,
   },
 ]
+
+export const buildInitialSettings = (
+  presets: [TripPreset, TripPreset],
+  autoSwitch: boolean,
+  autoSwitchHour: number,
+  homeWalkingMinutes: number,
+  workWalkingMinutes: number,
+): Omit<Settings, 'homeStation' | 'workStation'> => {
+  const index: 0 | 1 =
+    autoSwitch && new Date().getHours() < autoSwitchHour ? 0 : autoSwitch ? 1 : 0
+  const active = presets[index]
+  return {
+    activePresetIndex: index,
+    presets,
+    autoSwitch,
+    autoSwitchHour,
+    homeWalkingMinutes,
+    workWalkingMinutes,
+    currentBartStation: active.currentBartStation,
+    bartDirection: active.bartDirection,
+    bartMinutes: active.bartMinutes,
+    trainColors: active.trainColors,
+  }
+}

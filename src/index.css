@@ -92,3 +92,40 @@ a:visited {
 .transfer-magic .stations .station {
   margin-bottom: 0.5em;
 }
+
+/* Settings page */
+.settings-page {
+  padding: 0 0.25rem;
+}
+.settings-section {
+  margin-bottom: 1rem;
+}
+.settings-field {
+  margin-bottom: 0.5rem;
+}
+.settings-field label {
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 0.15rem;
+}
+.settings-field select,
+.settings-field input[type='number'],
+.settings-field input[type='text'] {
+  font-size: 1rem;
+  padding: 0.25rem;
+}
+.direction-toggle button {
+  padding: 0.25rem 0.75rem;
+  margin-right: 0.25rem;
+  border: 1px solid #ccc;
+  background: #fff;
+  cursor: pointer;
+}
+.direction-toggle button.active {
+  background: #0066cc;
+  color: #fff;
+  border-color: #0066cc;
+}
+.color-filters {
+  margin-top: 0.25rem;
+}
