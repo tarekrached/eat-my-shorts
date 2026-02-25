@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { fetchStationETDs } from '../store/stationETDsSlice'
+import { fetchGtfsRtData } from '../store/gtfsRtSlice'
 import { transferMagicSelector } from '../selectors'
 import type { AppDispatch } from '../store'
 
@@ -9,16 +9,9 @@ function TransferMagic() {
   const dispatch = useDispatch<AppDispatch>()
   const transferMagicData = useSelector(transferMagicSelector)
 
-  const load = () => {
-    dispatch(fetchStationETDs({ station: '12TH', dir: 'North' }))
-    dispatch(fetchStationETDs({ station: '19TH', dir: 'North' }))
-    dispatch(fetchStationETDs({ station: 'MCAR', dir: 'North' }))
-  }
-
   useEffect(() => {
-    load()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    dispatch(fetchGtfsRtData())
+  }, [dispatch])
 
   const { isFetching, targetTrains, sourceTrains, stations } = transferMagicData
 
@@ -46,7 +39,7 @@ function TransferMagic() {
             <div>
               target:{' '}
               {targetTrains
-                .filter((t) => t.intMinutes >= sourceTrains[0]?.intMinutes)
+                .filter((t) => t.intMinutes >= (sourceTrains[0]?.intMinutes ?? 0))
                 .map((t) => t.intMinutes)
                 .join(', ')}
             </div>

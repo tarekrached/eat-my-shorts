@@ -44,8 +44,10 @@ body {
   color: #888;
 }
 
-.train span.length {
-  color: #888888;
+.train .seconds {
+  font-size: 0.85rem;
+  margin-left: 0.1em;
+  color: #666;
 }
 
 .data-freshness {

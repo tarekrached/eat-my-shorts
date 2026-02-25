@@ -1,23 +1,21 @@
 import { configureStore } from '@reduxjs/toolkit'
 import settingsReducer from './settingsSlice'
-import stationETDsReducer from './stationETDsSlice'
-import bartAdvisoriesReducer from './bartAdvisoriesSlice'
+import gtfsRtReducer from './gtfsRtSlice'
 import userLocationReducer from './userLocationSlice'
 import type { RootState } from '../types'
 
 export const store = configureStore({
   reducer: {
     settings: settingsReducer,
-    stationETDs: stationETDsReducer,
-    bartAdvisories: bartAdvisoriesReducer,
+    gtfsRt: gtfsRtReducer,
     userLocation: userLocationReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
         // Ignore dayjs objects in actions and state
-        ignoredActions: ['stationETDs/fetch/fulfilled'],
-        ignoredPaths: ['stationETDs'],
+        ignoredActions: ['gtfsRt/fetch/fulfilled'],
+        ignoredPaths: ['gtfsRt.fetchedAt'],
       },
     }),
 })

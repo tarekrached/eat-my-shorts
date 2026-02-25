@@ -1,20 +1,29 @@
 import { createSelector } from 'reselect'
-import type { RootState, TrainEstimate, TrainColor, Direction } from '../types'
+import dayjs from 'dayjs'
+import type { RootState, TrainColor, Direction } from '../types'
 
-const stationETDsSelector = (state: RootState) => state.stationETDs
-
-interface TrainWithStations {
-  train: TrainEstimate
-  stations: Array<{
-    station: string
-    at: any
-    intMinutes: number
-  }>
+interface StationTrainInfo {
+  station: string
+  at: dayjs.Dayjs
+  intMinutes: number
 }
 
+interface TrainWithStations {
+  train: {
+    destination: string
+    hexcolor: string
+    color: string
+    direction: Direction
+    intMinutes: number
+  }
+  stations: StationTrainInfo[]
+}
+
+const gtfsRtSelector = (state: RootState) => state.gtfsRt
+
 export const transferMagicSelector = createSelector(
-  [stationETDsSelector],
-  (stationETDs) => {
+  [gtfsRtSelector],
+  (gtfsRt) => {
     const stations = ['12TH', '19TH', 'MCAR']
     const target = {
       colors: ['ORANGE', 'RED'] as TrainColor[],
@@ -25,67 +34,111 @@ export const transferMagicSelector = createSelector(
       direction: 'North' as Direction,
     }
 
-    if (stations.some((s) => !stationETDs[s] || !stationETDs[s].trains)) {
+    if (!gtfsRt.fetchedAt || gtfsRt.tripUpdates.length === 0) {
       return {
-        isFetching: true,
+        isFetching: gtfsRt.isFetching,
         targetTrains: [],
         sourceTrains: [],
         stations: [],
       }
     }
 
-    const rawTrains: TrainWithStations[] = stationETDs[stations[0]].trains.map((train) => {
-      const trainStations = stations.reduce((acc, station) => {
-        const stationTrain = stationETDs[station].trains.find(
-          (t) =>
-            t.destination === train.destination &&
-            t.length === train.length &&
-            t.intMinutes >= train.intMinutes
-        )
-        return stationTrain
-          ? acc.concat({
+    const now = dayjs()
+
+    // For each trip, compute departure info at each of the Oakland stations
+    const tripsAtStations = gtfsRt.tripUpdates
+      .filter((tu) =>
+        tu.stopUpdates.some((s) => stations.includes(s.stopId))
+      )
+      .map((tu) => {
+        const stationInfos = stations
+          .map((station) => {
+            const stop = tu.stopUpdates.find((s) => s.stopId === station)
+            if (!stop) return null
+            const departureTime = dayjs.unix(stop.departureTime)
+            return {
               station,
-              at: stationTrain.at,
-              intMinutes: stationTrain.intMinutes,
-            })
-          : acc
-      }, [] as Array<{ station: string; at: any; intMinutes: number }>)
+              at: departureTime,
+              intMinutes: Math.max(0, departureTime.diff(now, 'minute')),
+            }
+          })
+          .filter(Boolean) as StationTrainInfo[]
 
-      return {
-        train,
-        stations: trainStations,
-      }
-    })
+        const firstStop = stationInfos[0]
+        return {
+          train: {
+            destination: tu.destination,
+            hexcolor: tu.hexcolor,
+            color: tu.color,
+            direction: tu.direction,
+            intMinutes: firstStop?.intMinutes ?? 0,
+          },
+          stations: stationInfos,
+        } as TrainWithStations
+      })
 
-    const targetTrains = rawTrains.filter(
+    const targetTrains = tripsAtStations.filter(
       (t) =>
         target.colors.includes(t.train.color as TrainColor) &&
         t.train.direction === target.direction
     )
 
-    const sourceTrains = rawTrains.filter(
+    const sourceTrains = tripsAtStations.filter(
       (t) =>
         source.colors.includes(t.train.color as TrainColor) &&
         t.train.direction === source.direction
     )
 
+    // Per-station breakdown for the station view
+    const perStation = stations.map((station) => {
+      const stationTargets = gtfsRt.tripUpdates
+        .filter(
+          (tu) =>
+            target.colors.includes(tu.color as TrainColor) &&
+            tu.direction === target.direction &&
+            tu.stopUpdates.some((s) => s.stopId === station)
+        )
+        .map((tu) => {
+          const stop = tu.stopUpdates.find((s) => s.stopId === station)!
+          return {
+            ...tu,
+            intMinutes: Math.max(
+              0,
+              dayjs.unix(stop.departureTime).diff(now, 'minute')
+            ),
+          }
+        })
+
+      const stationSources = gtfsRt.tripUpdates
+        .filter(
+          (tu) =>
+            source.colors.includes(tu.color as TrainColor) &&
+            tu.direction === source.direction &&
+            tu.stopUpdates.some((s) => s.stopId === station)
+        )
+        .map((tu) => {
+          const stop = tu.stopUpdates.find((s) => s.stopId === station)!
+          return {
+            ...tu,
+            intMinutes: Math.max(
+              0,
+              dayjs.unix(stop.departureTime).diff(now, 'minute')
+            ),
+          }
+        })
+
+      return {
+        station,
+        targetTrains: stationTargets,
+        sourceTrains: stationSources,
+      }
+    })
+
     return {
       isFetching: false,
       targetTrains,
       sourceTrains,
-      stations: stations.map((station) => ({
-        station,
-        targetTrains: stationETDs[station].trains.filter(
-          (t) =>
-            target.colors.includes(t.color as TrainColor) &&
-            t.direction === target.direction
-        ),
-        sourceTrains: stationETDs[station].trains.filter(
-          (t) =>
-            source.colors.includes(t.color as TrainColor) &&
-            t.direction === source.direction
-        ),
-      })),
+      stations: perStation,
     }
   }
 )

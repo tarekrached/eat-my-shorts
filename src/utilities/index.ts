@@ -1,17 +1,10 @@
 import type { TripPreset, Settings, Direction } from '../types'
 import bartRoutes from '../data/bart-routes.json'
 
-export const bartApiKey = 'MW9S-E7SL-26DU-VV8V&'
-export const bartApiRoot = window.location.protocol + '//api.bart.gov/api/'
+const bartApiKey = 'MW9S-E7SL-26DU-VV8V&'
+const bartApiRoot = window.location.protocol + '//api.bart.gov/api/'
 
-export const bartStationETDsUrl = (station: string, dir: string | null = null): string =>
-  `${bartApiRoot}etd.aspx?cmd=etd&orig=${station}${
-    dir ? '&dir=' + dir[0].toLowerCase() : ''
-  }&key=${bartApiKey}&json=y`
-
-export const bartAdvisoriesUrl = `${bartApiRoot}bsa.aspx?cmd=bsa&key=${bartApiKey}&json=y`
-
-export const bartScheduleUrl = (orig: string, dest: string): string =>
+const bartScheduleUrl = (orig: string, dest: string): string =>
   `${bartApiRoot}sched.aspx?cmd=depart&orig=${orig}&dest=${dest}&date=now&key=${bartApiKey}&json=y`
 
 // Infer the BART direction (North/South) needed at `from` to reach `to`,
@@ -38,15 +31,6 @@ export const fetchTravelMinutes = async (orig: string, dest: string): Promise<nu
   const minutes = parseInt(trip?.['@tripTime'])
   if (isNaN(minutes)) throw new Error('Could not parse trip time from BART API')
   return minutes
-}
-
-export const checkFetchStatus = (response: Response): Response => {
-  if (response.status >= 200 && response.status < 300) {
-    return response
-  }
-  const error = new Error(response.statusText) as Error & { response?: Response }
-  error.response = response
-  throw error
 }
 
 export const radians = (n: number): number => n * (Math.PI / 180)
@@ -112,6 +96,7 @@ export const buildInitialSettings = (
     autoSwitchHour,
     homeWalkingMinutes,
     workWalkingMinutes,
+    pollingIntervalSeconds: 60,
     currentBartStation: active.currentBartStation,
     bartDirection: active.bartDirection,
     bartMinutes: active.bartMinutes,
