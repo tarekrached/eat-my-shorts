@@ -1,53 +1,54 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 import dayjs from 'dayjs'
-import { fetchStationETDs } from '../store/stationETDsSlice'
-import { fetchBartAdvisories } from '../store/bartAdvisoriesSlice'
+import { fetchGtfsRtData, refreshGtfsStatic } from '../store/gtfsRtSlice'
 import { setActivePreset } from '../store/settingsSlice'
 import { currentStationEtdsSelector } from '../selectors'
 import type { RootState, AppDispatch } from '../store'
-import { useDispatch } from 'react-redux'
 
 function Trip() {
   const dispatch = useDispatch<AppDispatch>()
-  const [, setCounter] = useState(0)
+  const [, setTick] = useState(0)
 
   const settings = useSelector((state: RootState) => state.settings)
   const stationETDs = useSelector(currentStationEtdsSelector)
-  const bartAdvisories = useSelector((state: RootState) => state.bartAdvisories)
+  const gtfsRt = useSelector((state: RootState) => state.gtfsRt)
+
+  const pollingInterval = settings.pollingIntervalSeconds
 
   const load = useCallback(() => {
-    dispatch(
-      fetchStationETDs({
-        station: settings.currentBartStation,
-        dir: settings.bartDirection,
-      })
-    )
-    dispatch(fetchBartAdvisories())
-  }, [dispatch, settings.currentBartStation, settings.bartDirection])
+    dispatch(fetchGtfsRtData())
+  }, [dispatch])
 
+  // Bootstrap: fetch GTFS static data if not cached
   useEffect(() => {
-    load()
-    const timer = setInterval(() => {
-      setCounter((c) => c + 1)
-    }, 3000)
+    if (!gtfsRt.gtfsStatic) {
+      dispatch(refreshGtfsStatic())
+    }
+  }, [dispatch, gtfsRt.gtfsStatic])
 
+  // Fetch real-time data on mount and on polling interval.
+  // Wait until GTFS static data is available so stop IDs can be mapped.
+  const hasStaticData = !!gtfsRt.gtfsStatic
+  useEffect(() => {
+    if (!hasStaticData) return
+    load()
+    const timer = setInterval(load, pollingInterval * 1000)
     return () => clearInterval(timer)
-  }, [load])
+  }, [load, pollingInterval, hasStaticData])
+
+  // Re-render every 1s so the seconds countdown ticks smoothly (no refetch)
+  useEffect(() => {
+    const timer = setInterval(() => setTick((c) => c + 1), 1_000)
+    return () => clearInterval(timer)
+  }, [])
 
   const handleReload = () => load()
 
   const switchPreset = () => {
     const nextIndex: 0 | 1 = settings.activePresetIndex === 0 ? 1 : 0
     dispatch(setActivePreset(nextIndex))
-    const nextPreset = settings.presets[nextIndex]
-    dispatch(
-      fetchStationETDs({
-        station: nextPreset.currentBartStation,
-        dir: nextPreset.bartDirection,
-      })
-    )
   }
 
   const {
@@ -75,38 +76,43 @@ function Trip() {
           <div id="bart-trains">
             {stationETDs.trains.map((train, i) => {
               const now = dayjs()
-              const leaveInMinutes = train.leaveBy?.diff(now, 'minute')
-              const trainInMinutes = train.at.diff(now, 'minute')
-              const isMissed = leaveInMinutes !== undefined && leaveInMinutes < 0
+              const leaveInSeconds = train.leaveBy.diff(now, 'second')
+              const leaveInMinutes = Math.floor(leaveInSeconds / 60)
+              const trainInSeconds = train.at.diff(now, 'second')
+              const trainInMinutes = Math.floor(trainInSeconds / 60)
+              const trainRemainderSec = trainInSeconds - trainInMinutes * 60
+              const isMissed = leaveInSeconds < 0
               return (
-              <div className={`train${isMissed ? ' missed' : ''}`} key={i}>
-                <span
-                  className="color"
-                  style={{ backgroundColor: train.hexcolor }}
-                />{' '}
-                <span className={`leave-by${isMissed ? ' missed' : ''}`}>
-                  🚶 {leaveInMinutes}<span className="unit">m</span>
-                </span>{' '}
-                <span className="train-departs">🚆 {trainInMinutes}<span className="unit">m</span></span>{' '}
-                <span className="destination">{train.destination}</span>{' '}
-                <span className="length">{train.length} car</span>{' '}
-                <span className="home-time">
-                  {train.etd?.format('h:mm a')}
-                </span>
-              </div>
-              )}
-            )}
+                <div className={`train${isMissed ? ' missed' : ''}`} key={i}>
+                  <span
+                    className="color"
+                    style={{ backgroundColor: train.hexcolor }}
+                  />{' '}
+                  <span className={`leave-by${isMissed ? ' missed' : ''}`}>
+                    🚶 {leaveInMinutes}<span className="unit">m</span>
+                  </span>{' '}
+                  <span className="train-departs">
+                    🚆 {trainInMinutes}<span className="unit">m</span>
+                    {i < 2 && <span className="seconds">{String(Math.max(0, trainRemainderSec)).padStart(2, '0')}<span className="unit">s</span></span>}
+                  </span>{' '}
+                  <span className="destination">{train.destination}</span>{' '}
+                  <span className="home-time">
+                    {train.etd.format('h:mm a')}
+                  </span>
+                </div>
+              )
+            })}
           </div>
         )}
       </div>
       <div id="bart-advisories">
         <a href="http://m.bart.gov/schedules/advisories">BART Advisories</a>:{' '}
-        {bartAdvisories.isFetching && (
+        {gtfsRt.isFetching && !gtfsRt.alerts.length && (
           <span className="loading">loading advisories</span>
         )}
-        {bartAdvisories.bartAdvisories && (
+        {gtfsRt.alerts.length > 0 && (
           <span id="bart-advisory-list">
-            {bartAdvisories.bartAdvisories.map((adv: string, i: number) => (
+            {gtfsRt.alerts.map((adv: string, i: number) => (
               <span key={i}>{adv}</span>
             ))}
           </span>
@@ -125,10 +131,16 @@ function Trip() {
           </span>
         )}
         <button onClick={handleReload}>Reload</button>
+        {gtfsRt.error && (
+          <span className="error" style={{ color: '#c00', marginLeft: '0.5rem' }}>
+            {gtfsRt.error}
+          </span>
+        )}
       </div>
       <p id="estimate-info">
         Arrival estimates include {bartMinutes} min on train,{' '}
         {homeWalkingMinutes} min walk (home), {workWalkingMinutes} min walk (work).
+        Refreshing every {pollingInterval}s.
       </p>
       <Link to="/settings" title="Settings" className="settings-link">&#9881;</Link>
     </div>

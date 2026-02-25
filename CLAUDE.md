@@ -10,371 +10,351 @@
 ## Technology Stack
 
 ### Frontend Framework & Libraries
-- **React 16.8.6**: Core UI framework using class components and hooks
-- **Redux 4.0.1**: State management with thunk middleware for async operations
-- **React-Redux 7.0.2**: Redux bindings for React
-- **Redux-Thunk 2.3.0**: Middleware for async Redux actions
-- **React-Router-DOM 5.0.0**: Client-side routing (hash-based routing with HashRouter)
-- **React-Router-Redux 4.0.8**: Redux integration for routing
+- **React 18.3**: Functional components with hooks
+- **TypeScript 5.6**: Full type safety across the codebase
+- **Redux Toolkit 2.3**: State management with `createSlice` and `createAsyncThunk`
+- **React-Redux 9.1**: Redux bindings (typed `useSelector`/`useDispatch`)
+- **React-Router-DOM 6.28**: Client-side routing (hash-based with `HashRouter`)
+- **Reselect 5.1**: Memoized selectors for derived state
 
 ### Data & Utilities
-- **Moment.js 2.24.0**: DateTime parsing, formatting, and relative time calculations
-- **Axios 0.18.0**: HTTP client (though fetch API is currently used in code)
-- **D3 5.9.2**: Data visualization library
-- **D3-Geo 1.11.3**: Geographic calculations (geodesic distance, bearing)
-- **Reselect 4.0.0**: Memoized selectors for Redux state
+- **Day.js 1.11**: DateTime calculations and relative time (replaced Moment.js)
+- **protobufjs 8.0**: GTFS-RT protobuf decoding
+- **fflate 0.8**: In-browser ZIP decompression for GTFS static data
+- **D3 7.9 / D3-Geo 3.1**: Geographic calculations (geodesic distance, bearing)
 
 ### Build & Deployment
-- **Vite 5.4**: Build tooling
+- **Vite 5.4**: Dev server with CORS proxy, production bundler
+- **vite-plugin-pwa 0.20**: Service worker generation and PWA manifest
 - **GitHub Actions**: CI/CD pipeline deploys to GitHub Pages on push to `main`
+- **Cloudflare Workers**: CORS proxy for BART GTFS endpoints in production
 - **Node 20** (used in CI)
 
 ## Project Structure
 
 ```
 eat-my-shorts/
-├── public/
-│   ├── index.html           # Main HTML template
-│   ├── manifest.json        # PWA manifest (iOS homescreen config)
-│   └── favicon.ico
 ├── src/
-│   ├── index.js             # App entry point with routing setup
-│   ├── index.css            # Global styles
-│   ├── store.js             # Redux store configuration
-│   ├── registerServiceWorker.js  # Service worker registration
-│   ├── actions/             # Redux async actions
-│   │   ├── fetch-station-etds.js      # Fetch train arrival times
-│   │   ├── fetch-bart-advisories.js   # Fetch BART service advisories
-│   │   ├── update-settings.js         # Update user preferences
-│   │   ├── get-user-location.js       # Request geolocation
-│   │   ├── watch-user-location.js     # Watch location changes (unused)
-│   │   └── index.js         # Action exports
-│   ├── reducers/            # Redux state reducers
-│   │   ├── settings.js      # User settings (current station, direction, etc)
-│   │   ├── station-etds.js  # Train data by station
-│   │   ├── bart-advisories.js # Service advisories
-│   │   ├── user-location.js # User geolocation data
-│   │   └── index.js         # Root reducer
-│   ├── selectors/           # Memoized Redux selectors
-│   │   ├── current-station-etds.js  # Filter/transform train data for current journey
-│   │   ├── transfer-magic.js        # Multi-station transfer analysis
-│   │   ├── closest-station.js       # Find nearest BART station
-│   │   └── index.js         # Selector exports
+│   ├── main.tsx                # Entry point: React root, routing, dayjs config
+│   ├── index.css               # Global styles (mobile-first)
+│   ├── vite-env.d.ts           # Vite type declarations
 │   ├── components/
-│   │   ├── trip.js          # Main component - displays next trains
-│   │   └── transfer-magic.js # Experimental feature - transfer analysis
-│   ├── utilities/           # Helper functions & constants
-│   │   └── index.js         # BART API URLs, settings presets, geo utilities
-│   └── data/                # Static BART data
+│   │   ├── Trip.tsx            # Main view — train departures with countdown
+│   │   ├── TransferMagic.tsx   # Transfer analysis between Oakland stations
+│   │   └── Settings.tsx        # Settings page — stations, walking times, filters
+│   ├── store/
+│   │   ├── index.ts            # Redux store (configureStore)
+│   │   ├── settingsSlice.ts    # User settings (presets, stations, walking times)
+│   │   ├── gtfsRtSlice.ts      # GTFS-RT state (trip updates, alerts, static data)
+│   │   └── userLocationSlice.ts # Geolocation state
+│   ├── selectors/
+│   │   ├── index.ts            # Re-exports
+│   │   ├── currentStationEtds.ts  # Filter/enrich trains for current journey
+│   │   ├── transferMagic.ts       # Transfer window analysis
+│   │   └── closestStation.ts      # Nearest BART station by geolocation
+│   ├── services/
+│   │   ├── gtfs-rt.ts          # Fetch & decode GTFS-RT protobuf feeds
+│   │   └── gtfs-static.ts      # Fetch & parse GTFS static ZIP (routes, trips, stops)
+│   ├── types/
+│   │   ├── index.ts            # Re-exports
+│   │   ├── redux.ts            # RootState, Settings, GtfsRtState, EnrichedTrain, etc.
+│   │   └── bart-api.ts         # BartStation, BartRoute, UserPosition
+│   ├── utilities/
+│   │   └── index.ts            # Default presets, direction inference, geo helpers
+│   └── data/
 │       ├── bart-stations.json  # All BART stations with coordinates
-│       └── bart-routes.json    # All BART routes and station sequences
+│       ├── bart-routes.json    # All BART routes and station sequences
+│       ├── gtfs-rt.js          # Compiled protobuf decoder (generated from .proto)
+│       └── gtfs-rt.d.ts        # TypeScript declarations for protobuf decoder
+├── worker/                     # Cloudflare Worker — CORS proxy for production
+│   ├── src/index.ts            # Worker script (~50 lines)
+│   ├── wrangler.toml           # Cloudflare config (name: bart-cors-proxy)
+│   ├── package.json            # wrangler + @cloudflare/workers-types
+│   └── tsconfig.json
+├── proto/                      # GTFS-RT protobuf definitions
 ├── etl/
-│   └── fetch-bart-data.js   # ETL script to fetch/update station & route data
-├── package.json             # Dependencies & scripts
-├── package-lock.json        # Locked dependency versions
-├── .gitignore               # Git ignore patterns
-└── store.js                 # Empty placeholder (not used)
+│   └── fetch-bart-data.js      # ETL script to refresh station/route JSON from BART API
+├── .github/workflows/
+│   └── deploy.yml              # GitHub Actions → GitHub Pages deployment
+├── vite.config.ts              # Vite config with CORS proxy and PWA plugin
+├── package.json
+└── tsconfig.json
 ```
 
 ## Key Features
 
 ### 1. Main Trip View (`/`)
-- **Display next trains**: Shows upcoming trains from configurable departure station in a specified direction
-- **Train info**: Line color, destination, length (number of cars), time until departure, estimated arrival time
-- **Time calculations**: Combines train time + walking time + boarding time to show total arrival time
-- **Settings switching**: Toggle between "home2Work" and "work2Home" presets based on time of day
-- **BART advisories**: Display service alerts from BART API
-- **Data freshness**: Shows when train data was last fetched, refresh button
-- **Quick links**: Station ETAs to all BART stops from current location
-- **Auto-refresh**: Updates train times every 3 seconds via interval
+- **Real-time departures**: Shows upcoming trains from your station via GTFS-RT protobuf
+- **Train info**: Color-coded line, destination, seconds countdown to departure, "leave by" time, estimated arrival
+- **Walking time calculation**: Shows when you need to leave (departure minus walking time)
+- **Preset switching**: Toggle between "home → work" and "work → home"
+- **BART advisories**: GTFS-RT service alerts
+- **Data freshness**: Shows when data was last fetched, with a Reload button
+- **Configurable polling**: Default 60s, adjustable from 15s to 5min in settings
 
 ### 2. Transfer Magic (`/transfer-magic`)
-- **Experimental feature**: Analyzes connections between Oakland stations (12TH, 19TH, MCAR)
-- **Source/Target trains**: Shows which trains can be caught from source stations to reach target trains
-- **Multi-station view**: Displays timing information for transfer windows at each station
+- **Experimental feature**: Analyzes transfer windows between Oakland stations (12TH, 19TH, MCAR)
+- **Source/Target trains**: Shows which Yellow line trains can connect to Orange/Red line trains heading North
+- **Per-station breakdown**: Departure times at each station for both source and target trains
 
-### 3. Auto-Switching Presets
-- **Time-based**: Automatically selects "home2Work" preset if before noon, "work2Home" after noon
-- **Configurable routes**: Two presets defined in utilities:
-  - `home2Work`: NBRK (North Berkeley) → MONT (Montgomery) via South
-  - `work2Home`: MONT → NBRK via North
-- **Manual override**: User can click "switch" button to toggle presets
+### 3. Settings Page (`/settings`)
+- **Home/work station selection**: Dropdown of all BART stations
+- **Walking times**: Minutes to walk from each station
+- **Auto-switch**: Toggle presets by time of day (configurable hour)
+- **Polling interval**: 15s / 30s / 60s / 2min / 5min
+- **Train line filter**: Checkboxes for Red, Orange, Yellow, Green, Blue
+- **Auto-computed**: Direction and travel time are inferred from station pair via BART Schedule API and route data
 
-### 4. Geolocation Features (Partially Implemented)
-- **Closest station**: Redux actions/reducers exist but not actively used in UI
-- **Geo utilities**: Using D3-geo and custom bearing calculations to find nearest BART station
-- **BART route topology**: Build adjacency graphs of stations using route data
+### 4. Auto-Switching Presets
+- **Time-based**: Selects "home → work" before a configurable hour (default noon), "work → home" after
+- **Configurable**: Two presets with station, direction, and travel time
+- **Manual override**: Click "switch" to toggle
 
 ## Data Flow & State Management
 
 ### Redux State Shape
-```javascript
-{
-  settings: {
-    preset: "home2Work" | "work2Home",
-    currentBartStation: "NBRK" | "MONT",
-    bartDirection: "North" | "South",
-    bartMinutes: 25,           // Travel time on train
-    walkingMinutes: 5 | 9,     // Walking time to/from station
-    trainColors: ["RED", "YELLOW"],  // Optional filter (unused)
-  },
-  stationETDs: {
-    [station]: {
-      isFetching: boolean,
-      trains: Train[],         // Parsed & enriched train data
-      at: Moment,              // Time data was fetched
-    }
-  },
-  bartAdvisories: {
-    isFetching: boolean,
-    bartAdvisories: string[],  // Alert messages
-    error: Error | false,
-  },
-  userLocation: {
-    isFetching: boolean,
-    position: GeolocationCoordinates,
-    error: Error | false,
-  }
+```typescript
+interface RootState {
+  settings: Settings        // User prefs, active preset, stations, walking times
+  gtfsRt: GtfsRtState       // Trip updates, alerts, GTFS static cache
+  userLocation: UserLocationState  // Geolocation (partially implemented)
 }
 ```
 
-### Train Data Object Structure
-```javascript
-{
-  minutes: "Leaving" | number,     // Raw response
-  intMinutes: 0 | number,          // Parsed integer
-  platform: string,                // "1", "2", etc
-  direction: string,               // "North" or "South"
-  length: number,                  // Cars in train
-  color: "RED" | "BLUE" | etc,     // Line color name
-  hexcolor: "#ff0000",             // Hex color code
-  bikeflag: "1" | "0",             // Bike allowed?
-  delay: string,                   // Delay info
-  destination: string,             // Destination station name
-  abbreviation: string,            // Station code (e.g., "WOAK")
-  limited: string,                 // Limited service flag
-  at: Moment,                      // Departure time (computed from API fetch time)
-  etd: Moment,                     // Estimated time to destination (selector computed)
+### Settings State
+```typescript
+interface Settings {
+  activePresetIndex: 0 | 1
+  presets: [TripPreset, TripPreset]   // home→work, work→home
+  autoSwitch: boolean
+  autoSwitchHour: number
+  homeStation: string                  // e.g. "NBRK"
+  workStation: string                  // e.g. "MONT"
+  homeWalkingMinutes: number
+  workWalkingMinutes: number
+  pollingIntervalSeconds: number
+  // Flattened from active preset (read by selectors):
+  currentBartStation: string
+  bartDirection: Direction
+  bartMinutes: number
+  trainColors?: TrainColor[]
+}
+```
+
+### GTFS-RT State
+```typescript
+interface GtfsRtState {
+  isFetching: boolean
+  tripUpdates: GtfsTripUpdate[]   // Decoded protobuf trip updates
+  alerts: string[]                 // Service advisory text
+  fetchedAt: Dayjs | null
+  error: string | null
+  gtfsStatic: GtfsStaticData | null   // Cached route/trip/stop lookups
+  gtfsStaticError: string | null
+}
+```
+
+### Enriched Train (selector output)
+```typescript
+interface EnrichedTrain {
+  tripId: string
+  routeId: string
+  color: string            // e.g. "RED"
+  hexcolor: string         // e.g. "#ff0000"
+  destination: string      // Last stop name
+  direction: Direction
+  at: Dayjs                // Departure time at this stop
+  intMinutes: number       // Minutes until departure
+  secondsUntilDeparture: number
+  leaveBy: Dayjs           // Latest time to leave (departure - walking time)
+  etd: Dayjs               // Estimated arrival at destination
 }
 ```
 
 ## BART API Integration
 
-### Endpoints Used
-1. **ETD (Estimated Time of Departure)**
-   - URL: `https://api.bart.gov/api/etd.aspx?cmd=etd&orig={station}&dir={direction}&key={apiKey}&json=y`
-   - Returns: Upcoming trains from a station in a given direction
-   - Parsing: Extracts destinations → estimates → enriches with timestamps
+### GTFS-RT Feeds (primary data source)
+Real-time train data comes from BART's GTFS-RT protobuf feeds:
 
-2. **BSA (BART Service Advisories)**
-   - URL: `https://api.bart.gov/api/bsa.aspx?cmd=bsa&key={apiKey}&json=y`
-   - Returns: Current service alerts and advisories
-   - Parsing: Extracts CDATA-wrapped description text
+1. **Trip Updates** — `api.bart.gov/gtfsrt/tripupdate.aspx`
+   - Binary protobuf, decoded with `transit_realtime.FeedMessage`
+   - Contains per-trip stop time updates (arrival/departure unix timestamps)
+   - Polled every 60s (configurable)
 
-3. **Station & Route Data (ETL)**
-   - Endpoints used by `etl/fetch-bart-data.js`:
-     - `route.aspx?cmd=routeinfo&route=all` - All BART routes and station sequences
-     - `stn.aspx?cmd=stns` - All BART stations with coordinates
-   - Output: JSON files saved to `src/data/` for static bundling
+2. **Alerts** — `api.bart.gov/gtfsrt/alerts.aspx`
+   - Binary protobuf with service advisories
+   - Polled alongside trip updates
 
-### API Key
-- Key: `MW9S-E7SL-26DU-VV8V` (exposed in code - BART provides public API key)
-- Protocol-aware: Uses `window.location.protocol` to support both HTTP and HTTPS
+### GTFS Static Data
+Route metadata, trip headsigns, and stop-to-station mapping:
+
+3. **Static ZIP** — `www.bart.gov/dev/schedules/google_transit.zip`
+   - ~770KB ZIP containing `routes.txt`, `trips.txt`, `stops.txt`
+   - Downloaded in-browser, decompressed with fflate, parsed as CSV
+   - Cached in localStorage, refreshed on settings save
+   - Maps platform stop IDs (e.g. "A30-1") to station abbreviations (e.g. "NBRK")
+
+### BART Schedule API (used in settings)
+4. **Schedule lookup** — `api.bart.gov/api/sched.aspx`
+   - JSON API used to compute travel time between two stations
+   - Called when saving settings (not during normal polling)
+   - Uses public API key `MW9S-E7SL-26DU-VV8V`
+
+### CORS Proxy
+
+BART's GTFS-RT and static endpoints don't include CORS headers.
+
+- **Development**: Vite's dev server proxies requests:
+  - `/proxy/gtfsrt/*` → `api.bart.gov/gtfsrt/*` (via Vite proxy config)
+  - `/proxy/gtfs-static/*` → `www.bart.gov/dev/schedules/*` (via custom Vite middleware that follows redirects)
+
+- **Production**: A Cloudflare Worker at `https://bart-cors-proxy.tarek-rached.workers.dev` proxies requests:
+  - `/gtfsrt/*` → `https://api.bart.gov/gtfsrt/*`
+  - `/gtfs-static/*` → `https://www.bart.gov/dev/schedules/*`
+
+The worker source is in `worker/src/index.ts`. It adds `Access-Control-Allow-Origin: *` to all responses and handles OPTIONS preflight. Deployed manually via `cd worker && npx wrangler deploy`.
 
 ## Selectors & Computed State
 
 ### currentStationEtdsSelector
-- **Purpose**: Filters trains for current settings and adds arrival time calculation
+- **Purpose**: Filters GTFS-RT trip updates for the active station/direction, enriches with timing
 - **Logic**:
-  - Selects trains from `stationETDs[currentBartStation]`
-  - Filters by color (if `trainColors` specified)
-  - Adds `etd` (estimated time destination) = `at + bartMinutes + walkingMinutes`
-  - Returns loading state if data not ready
-- **Memoized**: Via reselect to prevent unnecessary re-renders
+  - Filters `tripUpdates` where the trip serves `currentBartStation`
+  - Determines direction from stop sequence (uses `inferDirection` on consecutive stops, not GTFS `direction_id`)
+  - Applies `trainColors` filter if set
+  - Computes `leaveBy` (departure minus walking time) and `etd` (departure plus train time plus destination walking time)
+  - Hides trains that departed more than 60s ago
+  - Sorts by departure time
 
 ### transferMagicSelector
-- **Purpose**: Analyzes transfer opportunities between Oakland stations
+- **Purpose**: Analyzes transfer opportunities at Oakland stations
 - **Logic**:
   - Hardcoded stations: 12TH, 19TH, MCAR
-  - Hardcoded routes: Orange/Red trains (targets), Yellow trains (sources)
-  - Groups trains by destination across stations
-  - Identifies transfer windows where source train arrives before target train departs
-- **Returns**: Target trains, source trains, station details with timing
+  - Target: Orange/Red trains heading North
+  - Source: Yellow trains heading North
+  - Groups trains by station, computes per-station departure minutes
 
 ### closestStationSelector
-- **Purpose**: Finds nearest BART station using geolocation and D3-geo distance
-- **Uses**: d3-geo.geoDistance() for geodesic distance calculations
-- **Status**: Implemented but not actively used in UI
+- **Purpose**: Finds nearest BART station using geolocation and D3-geo
+- **Status**: Implemented but not used in UI
 
 ## Styling & UI/UX
 
 ### CSS Approach
-- Single `index.css` file with minimal styling
+- Single `index.css` file
 - Mobile-first design (max-width: 398px for homescreen app)
-- Color-coded train lines using `hexcolor` from API
-- Responsive font sizing and spacing
+- Color-coded train lines using `hexcolor` from GTFS data
+- `.missed` class for trains you can no longer catch (grayed out)
 
 ### Key CSS Classes
-- `.train`: Individual train display
-- `.train span.color`: Small colored square indicating line
-- `.train span.minutes`: Large, bold arrival time
-- `.data-freshness`: Last update timestamp
-- `.top-menu`: Navigation between views
-- `.transfer-magic .stations`: Multi-station layout
-
-### UI Design Philosophy
-- **iPhone homescreen optimized**: Compact layout, touch-friendly buttons
-- **Real-time updates**: Auto-refresh every 3 seconds
-- **At-a-glance info**: Color indicators, relative times ("in 5 minutes")
-- **Secondary info**: Grayed out text for car count, detailed timing
+- `.train`: Individual train row with color swatch, countdown, destination, arrival
+- `.leave-by`: Walking person emoji + minutes until you need to leave
+- `.train-departs`: Train emoji + minutes/seconds until departure
+- `.seconds`: Seconds counter shown for first two trains only
+- `.data-freshness`: Last-updated timestamp with reload button
+- `.settings-page`: Settings form layout
+- `.line-filters`: Train color checkbox group with colored swatches
 
 ## Deployment
 
-### Live Site
-- **URL**: https://tarekrached.github.io/eat-my-shorts/
+### Frontend — GitHub Pages (automatic)
+- **Live URL**: https://tarekrached.github.io/eat-my-shorts/
 - Deployed via GitHub Actions (`.github/workflows/deploy.yml`) on push to `main`
-- GitHub Pages source is set to "GitHub Actions" (not branch-based)
+- Workflow: `npm ci && npm run build` → upload `dist/` → deploy to Pages
+- Manual trigger available via `workflow_dispatch`
 
-### Deployment Steps
-Deployment is fully automated. Just push (or merge a PR) to `main`:
-
-1. GitHub Actions runs `npm ci && npm run build`
-2. The `dist/` directory is uploaded as a Pages artifact
-3. `deploy-pages` action publishes it to GitHub Pages
-
-To trigger a manual deploy, use the "Run workflow" button on the Actions tab (`workflow_dispatch`).
+### CORS Proxy — Cloudflare Worker (manual)
+- **Live URL**: https://bart-cors-proxy.tarek-rached.workers.dev
+- Source: `worker/src/index.ts`
+- Deploy: `cd worker && npx wrangler deploy`
+- Free tier: 100k requests/day (more than enough)
+- The worker is NOT part of the GitHub Actions pipeline
 
 ### Progressive Web App (PWA)
-- **Service Worker**: Registered in production for offline capability and caching
-- **Manifest**: `public/manifest.json` enables "Add to Home Screen" on iOS
-- **Display**: Standalone mode (appears as native app)
-- **Start URL**: `./index.html`
+- **Service Worker**: Generated by vite-plugin-pwa, auto-updates
+- **Manifest**: Configured in `vite.config.ts` (standalone display, homescreen icon)
+- **Start URL**: `.`
 
 ### Build Output
-- Optimized bundle via Vite
+- Optimized bundle via Vite with sourcemaps
 - Service worker for offline access and asset caching
-- Static assets (data files) bundled with app
 - Base path: `/eat-my-shorts/` (configured in `vite.config.ts`)
 
 ## Development Workflow
 
 ### Scripts
 ```bash
-npm run dev        # Start Vite dev server
-npm run build      # Build optimized production bundle (tsc && vite build)
+npm run dev        # Vite dev server with BART API CORS proxy
+npm run build      # TypeScript check + Vite production build
 npm run preview    # Preview production build locally
+```
+
+### Worker scripts (from worker/ directory)
+```bash
+npx wrangler dev     # Local worker dev server (port 8787)
+npx wrangler deploy  # Deploy to Cloudflare
 ```
 
 ### Key Patterns
 
-**Redux Thunk Actions**
-- All async data fetching uses redux-thunk (fetch + dispatch pattern)
-- Actions dispatch REQUEST, then RECEIVE/ERROR actions
-- Consistent error handling with console.error()
+**Redux Toolkit Slices**
+- `settingsSlice.ts`: Synchronous reducers for presets, stations, walking times. Persists to localStorage on every action.
+- `gtfsRtSlice.ts`: Async thunks (`fetchGtfsRtData`, `refreshGtfsStatic`) with pending/fulfilled/rejected handlers.
 
-**Moment.js Integration**
-- Custom locale configuration for relative time ("5 seconds" not "5s")
-- Used for time parsing, formatting, and calculations
-- Cloned before mutations to maintain immutability
+**GTFS-RT Protobuf Decoding**
+- `src/data/gtfs-rt.js` is a compiled protobuf decoder (generated from `proto/` definitions via `pbjs`)
+- `src/data/gtfs-rt.d.ts` provides TypeScript types
+- Decoding: `transit_realtime.FeedMessage.decode(new Uint8Array(arrayBuffer))`
+
+**GTFS Static ZIP Parsing**
+- Downloaded as binary, decompressed with `fflate.unzipSync()`
+- CSV files parsed with a custom parser (handles quoted fields)
+- Cached in localStorage under `ems-gtfs-static` key
+
+**Day.js Integration**
+- Extended with `relativeTime` plugin for "X minutes ago" display
+- Used for all time arithmetic (departure times, countdowns, ETAs)
+- `dayjs.unix()` converts GTFS-RT unix timestamps
 
 **Memoized Selectors**
-- Critical for performance since selectors are called on every store change
-- Reselect prevents downstream component re-renders if selected state hasn't changed
+- `createSelector` from reselect prevents expensive recalculations
+- Critical because Trip component re-renders every 1s for countdown ticking
 
-## Notable Implementation Details
-
-### Train Time Parsing
-- API returns `minutes` as either string "Leaving" or numeric string "5"
-- Reducer converts to `intMinutes` (0 for "Leaving", parseInt otherwise)
-- Actual departure timestamp calculated by adding minutes to API response fetch time
-
-### Service Advisory Parsing
-- BART BSA API returns advisories wrapped in CDATA sections
-- Reducer extracts `data.root.bsa[].description["#cdata-section"]`
-- Suggests XML response parsed as JSON (via CORS proxy or converter)
-
-### Unused/Partially Implemented Features
-- **Location watching**: `watch-user-location.js` imported but not used
-- **Closest station**: `closest-station.js` and `get-user-location.js` implemented but no UI integration
-- **Train color filtering**: `trainColors` config exists but mostly unused
-- **Axios**: Listed in dependencies but fetch API used instead
-
-### Historical Context
-- Based on earlier BART Chrome Extension (commit: "initial commit - feature parity with bart-chrome-extension")
-- Transfer Magic feature appears experimental (several commits on/off)
-- Recent changes focused on deployment (custom domain, homepage path)
+**Direction Inference**
+- `inferDirection(from, to)` walks bundled route data to determine North/South
+- Used both in settings (to auto-compute direction) and in `currentStationEtdsSelector` (to filter by direction using consecutive stops rather than GTFS `direction_id`)
 
 ## Configuration & Customization
 
-### Settings Presets
-Located in `src/utilities/index.js`:
-```javascript
-settingsPresets = [
-  {
-    preset: "home2Work",
-    currentBartStation: "NBRK",
-    bartDestination: "MONT",
-    bartMinutes: 25,
-    bartDirection: "South",
-    walkingMinutes: 5,
-  },
-  {
-    preset: "work2Home",
-    currentBartStation: "MONT",
-    bartDestination: "NBRK",
-    bartMinutes: 25,
-    bartDirection: "North",
-    trainColors: ["RED", "YELLOW"],
-    walkingMinutes: 9,
-  },
+### Default Presets
+Defined in `src/utilities/index.ts`:
+```typescript
+const defaultPresets: [TripPreset, TripPreset] = [
+  { name: 'home → work', currentBartStation: 'NBRK', bartMinutes: 25, bartDirection: 'South' },
+  { name: 'work → home', currentBartStation: 'MONT', bartMinutes: 25, bartDirection: 'North' },
 ]
 ```
 
-### Travel Times
-In `Trip.js`, render shows custom travel time configuration:
-- `bartMinutes`: Time on train (typically 25)
-- `walkingMinutes`: Pre-travel and post-travel walking (5-9 mins)
-
-### Station List
-`stationsHome` array in utilities defines which stations appear in the "en-route times" section, showing transit time from North Berkeley to each stop.
+### Persistence
+Settings are persisted to localStorage under `ems-settings`. GTFS static data is cached under `ems-gtfs-static`.
 
 ## Browser Support & Environment
 
 - **Target**: iOS Safari for homescreen app usage
-- **Browserlist**: 
-  - Production: >0.2%, not dead, not op_mini
-  - Development: Latest Chrome, Firefox, Safari
-- **ES Version**: ES6/ES2015 (via react-scripts transpilation)
-- **Redux DevTools**: Supported in development (checks `window.devToolsExtension`)
+- **Browserslist**: Production: >0.2%, not dead, not op_mini all
+- **Redux DevTools**: Supported via Redux Toolkit's default middleware
 
-## Performance Considerations
+## Notable Implementation Details
 
-- **Auto-refresh interval**: 3 seconds (aggressive, may impact battery life on homescreen)
-- **Memoized selectors**: Prevent unnecessary recalculations
-- **Service worker caching**: Assets cached for faster load/offline use
-- **Minimal dependencies**: Small bundle size suitable for mobile
+### Stop ID Mapping
+BART's GTFS data uses platform-level stop IDs (e.g. "A30-1") while the app works with station abbreviations (e.g. "NBRK"). The `stopToStation` mapping from GTFS static `stops.txt` translates between them.
 
-## Security Notes
+### Direction from Stop Sequence
+Rather than relying on GTFS `direction_id` (which can be inconsistent), the selector determines a train's direction at a station by looking at the next stop in the trip's sequence and using `inferDirection()` against the bundled route topology.
 
-- **BART API Key**: Public, hardcoded (BART provides public API key, acceptable)
-- **Geolocation**: Requests with browser permission prompt
-- **CORS**: All API calls to bart.gov (likely uses CORS or is server-side proxied)
+### 1-Second Re-render Tick
+`Trip.tsx` uses a separate `setInterval` at 1s to trigger re-renders for smooth countdown display, independent of the GTFS-RT polling interval.
 
-## Future Enhancement Opportunities
-
-1. **Actual geo-closest station**: Activate and integrate the unused geolocation selectors
-2. **Real-time updates**: Consider WebSockets instead of polling interval
-3. **Configurable settings UI**: Allow users to customize stations and travel times in-app (currently hardcoded)
-4. **Transfer Magic completion**: Polish and document the transfer analysis feature
-5. **Performance**: Increase refresh interval, add refresh rate setting
-6. **Testing**: No test files found - could add Jest/Enzyme tests
-7. **Modern React**: Migrate from class components to functional components with hooks
-8. **Type safety**: Add Flow or TypeScript types
-9. **Accessibility**: Add ARIA labels, keyboard navigation
-10. **Analytics**: Track usage patterns (with privacy considerations)
-
----
-
-Last updated: [Generation timestamp]
-Explored by: Claude Code Analysis Agent
-Thoroughness Level: Very Thorough
+### Partially Implemented Features
+- **Closest station**: Selector and geolocation slice exist but no UI integration
+- **D3-geo utilities**: Bearing/distance calculations implemented but unused
