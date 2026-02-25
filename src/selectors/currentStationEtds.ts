@@ -1,14 +1,10 @@
 import { createSelector } from 'reselect'
 import dayjs from 'dayjs'
 import type { RootState, CurrentStationEtds, EnrichedTrain, TrainColor, Direction } from '../types'
-import bartStations from '../data/bart-stations.json'
 import { inferDirection } from '../utilities'
 
 const gtfsRtSelector = (state: RootState) => state.gtfsRt
 const settingsSelector = (state: RootState) => state.settings
-
-const stationName = (abbr: string) =>
-  bartStations.find((s) => s.abbr === abbr)?.name ?? abbr
 
 /**
  * Determine the geographic direction a train is heading at a specific station
@@ -71,8 +67,9 @@ export const currentStationEtdsSelector = createSelector(
         const intMinutes = Math.max(0, Math.floor(secondsUntilDeparture / 60))
 
         // Use the last stop's station name as the destination (cleaner than GTFS headsign)
+        const stationNames = gtfsRt.gtfsStatic?.stationNames ?? {}
         const lastStopAbbr = tu.stopUpdates[tu.stopUpdates.length - 1]?.stopId
-        const destination = stationName(lastStopAbbr) || tu.destination
+        const destination = stationNames[lastStopAbbr] || tu.destination
 
         return {
           tripId: tu.tripId,

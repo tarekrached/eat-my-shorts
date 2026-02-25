@@ -11,8 +11,18 @@ body {
   margin-bottom: 0.5rem;
 }
 .train {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25em;
   margin-bottom: 0.5em;
   white-space: nowrap;
+}
+
+.train .destination {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .train.missed .leave-by {
@@ -25,8 +35,7 @@ body {
   width: 0.75em;
   height: 0.75em;
   border: 1px solid #666666;
-  margin-top: 0.1em;
-  margin-right: 0.25em;
+  flex-shrink: 0;
 }
 
 .train span.leave-by {

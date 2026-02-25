@@ -8,9 +8,6 @@ import type { TrainColor } from '../types'
 import { inferDirection, fetchTravelMinutes } from '../utilities'
 import bartStations from '../data/bart-stations.json'
 
-const stationName = (abbr: string) =>
-  bartStations.find((s) => s.abbr === abbr)?.name ?? abbr
-
 const LINE_COLORS: { key: TrainColor; label: string; hex: string }[] = [
   { key: 'RED', label: 'Red', hex: '#ff0000' },
   { key: 'ORANGE', label: 'Orange', hex: '#ff9933' },
@@ -32,6 +29,14 @@ function Settings() {
   const navigate = useNavigate()
   const settings = useSelector((state: RootState) => state.settings)
   const gtfsRt = useSelector((state: RootState) => state.gtfsRt)
+
+  // Prefer dynamic station names from GTFS static; fall back to bundled JSON
+  const dynamicStations = gtfsRt.gtfsStatic?.stationNames
+  const stationOptions = dynamicStations
+    ? Object.entries(dynamicStations).sort(([, a], [, b]) => a.localeCompare(b))
+    : bartStations.map((s) => [s.abbr, s.name] as const)
+  const stationName = (abbr: string) =>
+    dynamicStations?.[abbr] ?? bartStations.find((s) => s.abbr === abbr)?.name ?? abbr
 
   const [homeStation, setHomeStation] = useState(settings.homeStation)
   const [workStation, setWorkStation] = useState(settings.workStation)
@@ -138,9 +143,9 @@ function Settings() {
       <div className="settings-field">
         <label>Station near home</label>
         <select value={homeStation} onChange={(e) => setHomeStation(e.target.value)}>
-          {bartStations.map((s) => (
-            <option key={s.abbr} value={s.abbr}>
-              {s.name}
+          {stationOptions.map(([abbr, name]) => (
+            <option key={abbr} value={abbr}>
+              {name}
             </option>
           ))}
         </select>
@@ -160,9 +165,9 @@ function Settings() {
       <div className="settings-field" style={{ marginTop: '0.75rem' }}>
         <label>Station near work</label>
         <select value={workStation} onChange={(e) => setWorkStation(e.target.value)}>
-          {bartStations.map((s) => (
-            <option key={s.abbr} value={s.abbr}>
-              {s.name}
+          {stationOptions.map(([abbr, name]) => (
+            <option key={abbr} value={abbr}>
+              {name}
             </option>
           ))}
         </select>

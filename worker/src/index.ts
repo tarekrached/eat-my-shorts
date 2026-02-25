@@ -14,6 +14,7 @@ const CORS_HEADERS: HeadersInit = {
 const ROUTE_MAP: Record<string, string> = {
   '/gtfsrt/': 'https://api.bart.gov/gtfsrt/',
   '/gtfs-static/': 'https://www.bart.gov/dev/schedules/',
+  '/bart-api/': 'https://api.bart.gov/api/',
 }
 
 export default {

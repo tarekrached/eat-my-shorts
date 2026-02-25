@@ -69,6 +69,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/proxy\/gtfsrt/, '/gtfsrt'),
       },
+      '/proxy/bart-api': {
+        target: 'https://api.bart.gov',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/proxy\/bart-api/, '/api'),
+      },
     },
   }
 })

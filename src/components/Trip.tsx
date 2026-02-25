@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import dayjs from 'dayjs'
-import { fetchGtfsRtData, refreshGtfsStatic } from '../store/gtfsRtSlice'
+import { fetchGtfsRtData } from '../store/gtfsRtSlice'
 import { setActivePreset } from '../store/settingsSlice'
 import { currentStationEtdsSelector } from '../selectors'
 import type { RootState, AppDispatch } from '../store'
@@ -20,13 +20,6 @@ function Trip() {
   const load = useCallback(() => {
     dispatch(fetchGtfsRtData())
   }, [dispatch])
-
-  // Bootstrap: fetch GTFS static data if not cached
-  useEffect(() => {
-    if (!gtfsRt.gtfsStatic) {
-      dispatch(refreshGtfsStatic())
-    }
-  }, [dispatch, gtfsRt.gtfsStatic])
 
   // Fetch real-time data on mount and on polling interval.
   // Wait until GTFS static data is available so stop IDs can be mapped.
@@ -87,15 +80,15 @@ function Trip() {
                   <span
                     className="color"
                     style={{ backgroundColor: train.hexcolor }}
-                  />{' '}
+                  />
                   <span className={`leave-by${isMissed ? ' missed' : ''}`}>
                     🚶 {leaveInMinutes}<span className="unit">m</span>
-                  </span>{' '}
+                  </span>
                   <span className="train-departs">
                     🚆 {trainInMinutes}<span className="unit">m</span>
                     {i < 2 && <span className="seconds">{String(Math.max(0, trainRemainderSec)).padStart(2, '0')}<span className="unit">s</span></span>}
-                  </span>{' '}
-                  <span className="destination">{train.destination}</span>{' '}
+                  </span>
+                  <span className="destination">{train.destination}</span>
                   <span className="home-time">
                     {train.etd.format('h:mm a')}
                   </span>

@@ -28,6 +28,8 @@ export interface GtfsStaticData {
   trips: Record<string, GtfsTripInfo>
   /** Maps platform-level stop_id (e.g. "A30-1") to parent station abbr (e.g. "NBRK") */
   stopToStation: Record<string, string>
+  /** Maps station abbreviation (e.g. "NBRK") to full name (e.g. "North Berkeley") */
+  stationNames: Record<string, string>
   fetchedAt: number  // unix ms
 }
 
@@ -123,22 +125,25 @@ export async function fetchGtfsStaticData(): Promise<GtfsStaticData> {
     }
   }
 
-  // Parse stops.txt — build mapping from platform stop_id to parent station abbr.
+  // Parse stops.txt — build mapping from platform stop_id to parent station abbr,
+  // and collect station names from parent stations.
   // BART GTFS has parent stations (location_type=1, stop_id like "MONT")
   // and child platforms (location_type=0, parent_station="MONT", stop_id like "A30-1").
   const stopRows = parseCsv(textOf('stops.txt'))
   const stopToStation: Record<string, string> = {}
+  const stationNames: Record<string, string> = {}
   for (const s of stopRows) {
     if (s.parent_station) {
       // This is a child/platform stop — map it to its parent
       stopToStation[s.stop_id] = s.parent_station
     } else {
-      // Parent station — maps to itself
+      // Parent station — maps to itself and record its name
       stopToStation[s.stop_id] = s.stop_id
+      stationNames[s.stop_id] = s.stop_name
     }
   }
 
-  const data: GtfsStaticData = { routes, trips, stopToStation, fetchedAt: Date.now() }
+  const data: GtfsStaticData = { routes, trips, stopToStation, stationNames, fetchedAt: Date.now() }
   saveToStorage(data)
   return data
 }

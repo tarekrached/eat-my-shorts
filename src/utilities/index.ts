@@ -1,8 +1,10 @@
 import type { TripPreset, Settings, Direction } from '../types'
 import bartRoutes from '../data/bart-routes.json'
 
-const bartApiKey = 'MW9S-E7SL-26DU-VV8V&'
-const bartApiRoot = window.location.protocol + '//api.bart.gov/api/'
+const bartApiKey = 'MW9S-E7SL-26DU-VV8V'
+const isDev = import.meta.env.DEV
+const CORS_PROXY = 'https://bart-cors-proxy.tarek-rached.workers.dev'
+const bartApiRoot = isDev ? '/proxy/bart-api/' : `${CORS_PROXY}/bart-api/`
 
 const bartScheduleUrl = (orig: string, dest: string): string =>
   `${bartApiRoot}sched.aspx?cmd=depart&orig=${orig}&dest=${dest}&date=now&key=${bartApiKey}&json=y`
