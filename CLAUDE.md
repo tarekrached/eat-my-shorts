@@ -35,7 +35,7 @@
 ```
 eat-my-shorts/
 ├── src/
-│   ├── main.tsx                # Entry point: React root, routing, dayjs config
+│   ├── main.tsx                # Entry point: React root, routing, dayjs config, GTFS static bootstrap
 │   ├── index.css               # Global styles (mobile-first)
 │   ├── vite-env.d.ts           # Vite type declarations
 │   ├── components/
@@ -193,12 +193,14 @@ Route metadata, trip headsigns, and stop-to-station mapping:
    - Downloaded in-browser, decompressed with fflate, parsed as CSV
    - Cached in localStorage, refreshed on settings save
    - Maps platform stop IDs (e.g. "A30-1") to station abbreviations (e.g. "NBRK")
+   - Also extracts station names (e.g. "NBRK" → "North Berkeley") for display
 
 ### BART Schedule API (used in settings)
 4. **Schedule lookup** — `api.bart.gov/api/sched.aspx`
    - JSON API used to compute travel time between two stations
    - Called when saving settings (not during normal polling)
    - Uses public API key `MW9S-E7SL-26DU-VV8V`
+   - Proxied through the same CORS proxy as GTFS endpoints (see below)
 
 ### CORS Proxy
 
@@ -207,10 +209,12 @@ BART's GTFS-RT and static endpoints don't include CORS headers.
 - **Development**: Vite's dev server proxies requests:
   - `/proxy/gtfsrt/*` → `api.bart.gov/gtfsrt/*` (via Vite proxy config)
   - `/proxy/gtfs-static/*` → `www.bart.gov/dev/schedules/*` (via custom Vite middleware that follows redirects)
+  - `/proxy/bart-api/*` → `api.bart.gov/api/*` (schedule API, via Vite proxy config)
 
 - **Production**: A Cloudflare Worker at `https://bart-cors-proxy.tarek-rached.workers.dev` proxies requests:
   - `/gtfsrt/*` → `https://api.bart.gov/gtfsrt/*`
   - `/gtfs-static/*` → `https://www.bart.gov/dev/schedules/*`
+  - `/bart-api/*` → `https://api.bart.gov/api/*`
 
 The worker source is in `worker/src/index.ts`. It adds `Access-Control-Allow-Origin: *` to all responses and handles OPTIONS preflight. Deployed manually via `cd worker && npx wrangler deploy`.
 
@@ -222,6 +226,7 @@ The worker source is in `worker/src/index.ts`. It adds `Access-Control-Allow-Ori
   - Filters `tripUpdates` where the trip serves `currentBartStation`
   - Determines direction from stop sequence (uses `inferDirection` on consecutive stops, not GTFS `direction_id`)
   - Applies `trainColors` filter if set
+  - Resolves destination names from `gtfsStatic.stationNames` (dynamic, from GTFS stops.txt)
   - Computes `leaveBy` (departure minus walking time) and `etd` (departure plus train time plus destination walking time)
   - Hides trains that departed more than 60s ago
   - Sorts by departure time
@@ -247,7 +252,7 @@ The worker source is in `worker/src/index.ts`. It adds `Access-Control-Allow-Ori
 - `.missed` class for trains you can no longer catch (grayed out)
 
 ### Key CSS Classes
-- `.train`: Individual train row with color swatch, countdown, destination, arrival
+- `.train`: Flexbox row with color swatch, countdown, destination (truncates with ellipsis), arrival
 - `.leave-by`: Walking person emoji + minutes until you need to leave
 - `.train-departs`: Train emoji + minutes/seconds until departure
 - `.seconds`: Seconds counter shown for first two trains only
@@ -346,8 +351,8 @@ Settings are persisted to localStorage under `ems-settings`. GTFS static data is
 
 ## Notable Implementation Details
 
-### Stop ID Mapping
-BART's GTFS data uses platform-level stop IDs (e.g. "A30-1") while the app works with station abbreviations (e.g. "NBRK"). The `stopToStation` mapping from GTFS static `stops.txt` translates between them.
+### Stop ID Mapping & Station Names
+BART's GTFS data uses platform-level stop IDs (e.g. "A30-1") while the app works with station abbreviations (e.g. "NBRK"). The `stopToStation` mapping from GTFS static `stops.txt` translates between them. Station display names (e.g. "North Berkeley") are also extracted from `stops.txt` into `stationNames` — this is the primary source for destination labels and Settings dropdowns, with `bart-stations.json` as a fallback before the GTFS ZIP loads.
 
 ### Direction from Stop Sequence
 Rather than relying on GTFS `direction_id` (which can be inconsistent), the selector determines a train's direction at a station by looking at the next stop in the trip's sequence and using `inferDirection()` against the bundled route topology.
