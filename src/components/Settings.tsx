@@ -78,6 +78,13 @@ function Settings() {
     }
 
     setSaving(true)
+
+    // Refresh GTFS static data first, outside the try. A stale trips table
+    // silently empties the train list, and Save is the only way to force a
+    // refresh — so it must not be gated behind the schedule API, which is a
+    // separate endpoint that can fail on its own.
+    dispatch(refreshGtfsStatic())
+
     try {
       const travelMinutes = await fetchTravelMinutes(homeStation, workStation)
       const colors = trainColors.length === allColors.length ? undefined : trainColors
@@ -115,9 +122,6 @@ function Settings() {
           workWalkingMinutes,
         })
       )
-
-      // Refresh GTFS static data (route colors, trip metadata)
-      dispatch(refreshGtfsStatic())
 
       navigate('/')
     } catch {

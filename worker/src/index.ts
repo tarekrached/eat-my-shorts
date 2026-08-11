@@ -32,7 +32,10 @@ export default {
 
     for (const [prefix, upstream] of Object.entries(ROUTE_MAP)) {
       if (path.startsWith(prefix)) {
-        const target = upstream + path.slice(prefix.length)
+        // url.search must be forwarded — the schedule API carries everything
+        // (cmd, orig, dest, key) in the query string, and BART rejects the
+        // request as "Invalid key" if it is dropped.
+        const target = upstream + path.slice(prefix.length) + url.search
         const upstreamResponse = await fetch(target, { redirect: 'follow' })
 
         const headers = new Headers(upstreamResponse.headers)

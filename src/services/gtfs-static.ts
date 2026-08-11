@@ -30,6 +30,10 @@ export interface GtfsStaticData {
   stopToStation: Record<string, string>
   /** Maps station abbreviation (e.g. "NBRK") to full name (e.g. "North Berkeley") */
   stationNames: Record<string, string>
+  /** feed_info.txt feed_start_date, "YYYYMMDD". Absent if the feed omits it. */
+  feedStartDate?: string
+  /** feed_info.txt feed_end_date, "YYYYMMDD". Absent if the feed omits it. */
+  feedEndDate?: string
   fetchedAt: number  // unix ms
 }
 
@@ -43,6 +47,17 @@ const GTFS_ZIP_URL = isDev
   ? '/proxy/gtfs-static/google_transit.zip'
   : `${CORS_PROXY}/gtfs-static/google_transit.zip`
 const STORAGE_KEY = 'ems-gtfs-static'
+
+/**
+ * How long a cached copy is trusted before we refetch.
+ *
+ * BART rotates every trip_id whenever it publishes a new schedule, and the
+ * GTFS-RT feed identifies trains by trip_id alone (no route_id, no
+ * direction_id). So a cached trips table that predates a schedule change
+ * resolves nothing, and the train list silently empties. Refetching daily
+ * bounds that window to a day; the ZIP is under a megabyte.
+ */
+const MAX_AGE_MS = 24 * 60 * 60 * 1000
 
 // ── CSV parser ───────────────────────────────────────────────────────────
 
@@ -102,6 +117,17 @@ export async function fetchGtfsStaticData(): Promise<GtfsStaticData> {
     return new TextDecoder().decode(entry)
   }
 
+  // feed_info.txt is optional in GTFS, so treat it as best-effort.
+  let feedStartDate: string | undefined
+  let feedEndDate: string | undefined
+  try {
+    const feedRows = parseCsv(textOf('feed_info.txt'))
+    feedStartDate = feedRows[0]?.feed_start_date || undefined
+    feedEndDate = feedRows[0]?.feed_end_date || undefined
+  } catch {
+    // No feed_info.txt — the age cap in isStale() still applies.
+  }
+
   // Parse routes.txt
   const routeRows = parseCsv(textOf('routes.txt'))
   const routes: Record<string, GtfsRouteInfo> = {}
@@ -143,9 +169,44 @@ export async function fetchGtfsStaticData(): Promise<GtfsStaticData> {
     }
   }
 
-  const data: GtfsStaticData = { routes, trips, stopToStation, stationNames, fetchedAt: Date.now() }
+  const data: GtfsStaticData = {
+    routes,
+    trips,
+    stopToStation,
+    stationNames,
+    feedStartDate,
+    feedEndDate,
+    fetchedAt: Date.now(),
+  }
   saveToStorage(data)
   return data
+}
+
+// ── Staleness ────────────────────────────────────────────────────────────
+
+/** Local calendar date as "YYYYMMDD", matching the GTFS date format. */
+function todayStamp(now: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`
+}
+
+/**
+ * Whether a cached copy should be refetched.
+ *
+ * Two independent triggers: the feed's own validity window has been left
+ * behind, or the copy is simply older than MAX_AGE_MS. The age cap is the
+ * one that matters in practice — BART has shipped new trip_ids without
+ * moving feed_start_date, so the validity window alone will miss changes.
+ */
+export function isStale(data: GtfsStaticData, now: Date = new Date()): boolean {
+  if (!data.fetchedAt) return true
+  if (now.getTime() - data.fetchedAt > MAX_AGE_MS) return true
+
+  const today = todayStamp(now)
+  if (data.feedEndDate && today > data.feedEndDate) return true
+  if (data.feedStartDate && today < data.feedStartDate) return true
+
+  return false
 }
 
 // ── localStorage cache ───────────────────────────────────────────────────
