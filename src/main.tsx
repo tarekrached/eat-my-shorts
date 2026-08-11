@@ -8,6 +8,7 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 import './index.css'
 import { store } from './store'
 import { refreshGtfsStatic } from './store/gtfsRtSlice'
+import { isStale } from './services/gtfs-static'
 import Trip from './components/Trip'
 import TransferMagic from './components/TransferMagic'
 import Settings from './components/Settings'
@@ -15,8 +16,11 @@ import Settings from './components/Settings'
 // Configure dayjs
 dayjs.extend(relativeTime)
 
-// Eagerly fetch GTFS static data on launch if not already cached
-if (!store.getState().gtfsRt.gtfsStatic) {
+// Eagerly fetch GTFS static data on launch if it is missing or stale.
+// The cached copy stays in place while this runs, and survives a failed
+// refresh, so an offline launch still renders with whatever we last had.
+const cachedStatic = store.getState().gtfsRt.gtfsStatic
+if (!cachedStatic || isStale(cachedStatic)) {
   store.dispatch(refreshGtfsStatic())
 }
 
