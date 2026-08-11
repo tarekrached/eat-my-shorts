@@ -23,13 +23,19 @@ function Trip() {
 
   // Fetch real-time data on mount and on polling interval.
   // Wait until GTFS static data is available so stop IDs can be mapped.
-  const hasStaticData = !!gtfsRt.gtfsStatic
+  //
+  // Keyed on fetchedAt rather than mere presence: trip updates are enriched
+  // with route and color at fetch time, so trains decoded against a stale
+  // trips table stay stale in the store. When a refresh lands mid-session,
+  // this re-runs and refetches immediately instead of leaving the list empty
+  // until the next poll.
+  const staticFetchedAt = gtfsRt.gtfsStatic?.fetchedAt ?? null
   useEffect(() => {
-    if (!hasStaticData) return
+    if (!staticFetchedAt) return
     load()
     const timer = setInterval(load, pollingInterval * 1000)
     return () => clearInterval(timer)
-  }, [load, pollingInterval, hasStaticData])
+  }, [load, pollingInterval, staticFetchedAt])
 
   // Re-render every 1s so the seconds countdown ticks smoothly (no refetch)
   useEffect(() => {
