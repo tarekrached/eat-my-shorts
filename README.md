@@ -72,6 +72,8 @@ eat-my-shorts/
 │   └── tsconfig.json
 ├── etl/
 │   └── fetch-bart-data.js      # Script to refresh station/route JSON
+├── tools/
+│   └── generate-icons.mjs      # Regenerates every app icon in public/
 ├── proto/                      # Protobuf definitions for GTFS-RT
 └── .github/workflows/
     └── deploy.yml              # GitHub Actions → GitHub Pages
@@ -112,6 +114,22 @@ npx wrangler deploy  # deploy to workers.dev
 ```
 
 The worker rarely needs updating — it's a simple CORS proxy that maps paths to upstream BART URLs.
+
+## Icons
+
+Every icon in `public/` is generated from a single vector source. Don't edit the PNGs by hand, rerun the generator:
+
+```bash
+node tools/generate-icons.mjs
+```
+
+It writes `apple-touch-icon.png` (180px, what iOS uses on the Home Screen), `pwa-192x192.png`, `pwa-512x512.png`, `pwa-maskable-512.png`, `favicon.svg`, and a multi-size `favicon.ico`. Rasterising goes through headless Chrome, which handles SVG far more faithfully than ImageMagick's built-in renderer; ImageMagick is used only to pack the `.ico`. Requires Google Chrome and `magick` on PATH.
+
+Two invariants in the script are commented in place and easy to break by accident. The crotch notch apex is derived as `top + 2 * bandHeight` so it lands exactly on a stripe seam, and the stripe bands overlap downward only. Both exist to stop a colour band bridging the gap between the legs, which is invisible at icon size and obvious when magnified.
+
+The maskable variant renders at a reduced scale so its art fits inside the centred 80% circle Android crops to. The standard 512 would lose about 3,500 pixels to that crop.
+
+iOS snapshots the Home Screen icon at install time and never refetches it. Changing the icon means existing installs need to be removed and re-added.
 
 ## Scripts
 
