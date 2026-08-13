@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { updatePreset, setAutoSwitch, saveStations, setTrainColors, setPollingInterval, setMinTransferMinutes } from '../store/settingsSlice'
+import { updatePreset, setAutoSwitch, saveStations, setTrainColors, setPollingInterval, setTransferBuffer } from '../store/settingsSlice'
 import { refreshGtfsStatic } from '../store/gtfsRtSlice'
 import type { RootState, AppDispatch } from '../store'
 import type { TrainColor } from '../types'
@@ -14,6 +14,15 @@ const LINE_COLORS: { key: TrainColor; label: string; hex: string }[] = [
   { key: 'YELLOW', label: 'Yellow', hex: '#ffff33' },
   { key: 'GREEN', label: 'Green', hex: '#339933' },
   { key: 'BLUE', label: 'Blue', hex: '#0099cc' },
+]
+
+const TRANSFER_BUFFER_OPTIONS = [
+  { value: -60, label: '−60s (leaves before you land)' },
+  { value: -30, label: '−30s' },
+  { value: -15, label: '−15s' },
+  { value: 0, label: '0' },
+  { value: 30, label: '+30s' },
+  { value: 60, label: '+60s' },
 ]
 
 const POLLING_OPTIONS = [
@@ -45,7 +54,7 @@ function Settings() {
   const [autoSwitch, setAutoSwitchLocal] = useState(settings.autoSwitch)
   const [autoSwitchHour, setAutoSwitchHour] = useState(settings.autoSwitchHour)
   const [pollingInterval, setPollingIntervalLocal] = useState(settings.pollingIntervalSeconds)
-  const [minTransfer, setMinTransferLocal] = useState(settings.minTransferMinutes)
+  const [transferBuffer, setTransferBufferLocal] = useState(settings.transferBufferSeconds)
   const allColors = LINE_COLORS.map((c) => c.key)
   const [trainColors, setLocalTrainColors] = useState<TrainColor[]>(
     settings.trainColors ?? allColors
@@ -115,7 +124,7 @@ function Settings() {
       dispatch(setAutoSwitch({ autoSwitch, autoSwitchHour }))
       dispatch(setTrainColors(colors))
       dispatch(setPollingInterval(pollingInterval))
-      dispatch(setMinTransferMinutes(minTransfer))
+      dispatch(setTransferBuffer(transferBuffer))
       dispatch(
         saveStations({
           homeStation,
@@ -232,20 +241,22 @@ function Settings() {
       </div>
 
       <div className="settings-field" style={{ marginTop: '0.75rem' }}>
-        <label>Shortest transfer you&rsquo;d bet on</label>
+        <label>Transfer buffer</label>
         <select
-          value={minTransfer}
-          onChange={(e) => setMinTransferLocal(Number(e.target.value))}
+          value={transferBuffer}
+          onChange={(e) => setTransferBufferLocal(Number(e.target.value))}
         >
-          {[1, 2, 3, 4, 5].map((value) => (
+          {TRANSFER_BUFFER_OPTIONS.map(({ value, label }) => (
             <option key={value} value={value}>
-              {value} min
+              {label}
             </option>
           ))}
         </select>
         <p className="settings-hint">
-          Slack added when working out which connections you can make. The wye
-          transfers are cross-platform, so 1 min is usually right.
+          Slack when deciding which connections count. The wye platforms are
+          about thirty feet across, so 0 is usually right. Negative accepts
+          trains scheduled to leave just before you land, which is a gamble that
+          sometimes pays.
         </p>
       </div>
 

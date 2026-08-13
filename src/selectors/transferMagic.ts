@@ -36,17 +36,16 @@ import { inferDirection } from '../utilities'
 // through them too, so each is a genuine transfer opportunity.
 const TRANSFER_STATIONS = ['12TH', '19TH', 'MCAR']
 
-// Stepping off one train and onto another. Every transfer in the Oakland wye
-// is same-platform or cross-platform, so this is doors-and-stairs time, not a
-// walk: a one-minute connection is genuinely makeable when the train is
-// actually sitting there. What kills these transfers isn't the clock, it's not
-// knowing whether the other train is still coming or already gone, which is
-// what the track view exists to answer. `settings.minTransferMinutes`
-// (default 1) can add slack for anyone who wants it.
-const DOORS_SECONDS = 60
+// There is no walk here. The wye platforms are about thirty feet across, so
+// stepping between trains costs nothing and `settings.transferBufferSeconds`
+// defaults to zero. It can also go negative, because a train scheduled to pull
+// out slightly before you land is still sometimes there when you do — an
+// untimed gamble, but the rider's gamble to take, not this selector's to
+// veto. What actually decides these transfers is knowing where the other train
+// is, which is what the track view carries.
 
 // A train whose stop at your station is this far in the past is gone.
-const DEPARTED_GRACE_SECONDS = 60
+const DEPARTED_GRACE_SECONDS = 90
 
 export interface TransferTrain {
   tripId: string
@@ -71,13 +70,12 @@ export interface TrackTrain {
   /** true for the train you're riding */
   isYou: boolean
   /**
-   * Per wye station: minutes until this train is there, or null once it has
-   * been and gone. For your train that's when you arrive; for the others it's
-   * when they leave, which is the moment you'd need to be standing there.
+   * Per wye station, as an absolute time so the view can tick it down to the
+   * second: for your train when you arrive, for the others when they leave,
+   * which is the moment you'd need to be standing there. Null once a train is
+   * well past a station, or when it doesn't serve it.
    */
-  minutesTo: Record<string, number | null>
-  /** stations where you could actually step across onto this train */
-  catchableAt: string[]
+  at: Record<string, dayjs.Dayjs | null>
 }
 
 export interface TransferOption {
@@ -184,10 +182,7 @@ export const transferMagicSelector = createSelector(
 
     const now = dayjs()
     const nowUnix = now.unix()
-    const bufferSeconds = Math.max(
-      DOORS_SECONDS,
-      (settings.minTransferMinutes ?? 1) * 60
-    )
+    const bufferSeconds = settings.transferBufferSeconds ?? 0
     const toTrain = (tu: GtfsTripUpdate, unix: number): TransferTrain => ({
       tripId: tu.tripId,
       color: tu.color,
@@ -335,34 +330,23 @@ export const transferMagicSelector = createSelector(
           hexcolor: tu.hexcolor,
           destination: tu.destination,
           isYou: true,
-          minutesTo: Object.fromEntries(
+          at: Object.fromEntries(
             TRANSFER_STATIONS.map((station) => {
               const at = arrivalAt(tu, station)
-              return [station, at && at > nowUnix ? Math.round((at - nowUnix) / 60) : null]
+              return [station, at && at > nowUnix ? dayjs.unix(at) : null]
             })
           ),
-          catchableAt: [],
         }
 
         const track: TrackTrain[] = [
           youRow,
           ...[...connectingTrips.values()]
             .map((other) => {
-              const minutesTo: Record<string, number | null> = {}
-              const catchableAt: string[] = []
+              const at: Record<string, dayjs.Dayjs | null> = {}
               for (const station of TRANSFER_STATIONS) {
                 const departs = departureAt(other, station)
                 const gone = !departs || departs <= nowUnix - DEPARTED_GRACE_SECONDS
-                minutesTo[station] = gone ? null : Math.round((departs! - nowUnix) / 60)
-                const youArrive = arrivalAt(tu, station)
-                if (
-                  departs &&
-                  youArrive &&
-                  youArrive > nowUnix &&
-                  departs >= youArrive + bufferSeconds
-                ) {
-                  catchableAt.push(station)
-                }
+                at[station] = gone ? null : dayjs.unix(departs!)
               }
               return {
                 tripId: other.tripId,
@@ -372,17 +356,16 @@ export const transferMagicSelector = createSelector(
                   nameOf(other.stopUpdates[other.stopUpdates.length - 1]?.stopId) ||
                   other.destination,
                 isYou: false,
-                minutesTo,
-                catchableAt,
+                at,
               }
             })
-            .filter((t) => TRANSFER_STATIONS.some((s) => t.minutesTo[s] !== null))
+            .filter((t) => TRANSFER_STATIONS.some((s) => t.at[s] !== null))
             .sort((a, b) => {
               const first = (t: TrackTrain) =>
                 Math.min(
-                  ...TRANSFER_STATIONS.map((s) => t.minutesTo[s]).filter(
-                    (v): v is number => v !== null
-                  )
+                  ...TRANSFER_STATIONS.map((s) => t.at[s])
+                    .filter((v): v is dayjs.Dayjs => v !== null)
+                    .map((v) => v.unix())
                 )
               return first(a) - first(b)
             })

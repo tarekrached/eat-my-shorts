@@ -95,11 +95,13 @@ Coming home from SF on a Yellow (Antioch/Pittsburg) train, you can't stay on it 
 
 Pick the train you're on (it defaults to the next one heading into Oakland), and each station shows when you'd arrive, how long you'd wait, which onward train you'd catch, and when you'd be home. The recommended station is the one that gets you home soonest.
 
-**The track view is the point.** Above the recommendation is a small grid: your train's row is when you reach each of 12th, 19th and MacArthur; every other row is a Richmond-bound train and when it *leaves* each station, which is the moment you'd need to already be standing there. A dot means it's been and gone.
+**The track view is the point.** Above the recommendation is a small grid. Your train's row is when you reach each of 12th, 19th and MacArthur; every other row is a Richmond-bound train and when it *leaves* each station, which is the moment you'd need to already be standing there. A dot means it's been and gone.
 
-That answers the thing you cannot see from a platform. Pulling into 12th on an empty platform, a row reading `·  2m  5m` is a train that has cleared 12th and is sitting at 19th right now: not here, but still yours if you stay on. A row reading `·  ·  0m` is gone. Bold cells are the ones you could actually step across onto.
+That answers the thing you cannot see from a platform. Pulling into 12th, a row reading `·  2:10  5:40` is a train that has cleared 12th and is sitting at 19th right now: not here, but still yours if you stay on. A row of dots is gone.
 
-Every wye transfer is same-platform or cross-platform, so a one-minute connection is genuinely makeable when the train is there. What kills these transfers isn't the clock, it's not knowing where the other train is. `minTransferMinutes` (Settings, default 1) adds slack for anyone who wants it, and 60 seconds is the hard floor below which a train is treated as already leaving.
+**Countdowns are to the second, not rounded to minutes**, because the decision turns on ten or fifteen seconds. "4m" and "5m" can be forty seconds apart or a hundred, which is the difference between walking on and watching it go. Minutes take over past ten, where precision stops meaning anything.
+
+There is no walk in any of this. The wye platforms are about thirty feet across, so stepping between trains costs nothing and the transfer buffer defaults to zero. It can also go **negative** (Settings), which accepts a train scheduled to pull out just before you land, because untimed as that is, it's often still there. Bold cells clear your buffer; amber ones are that gamble, shown rather than hidden, since it's the rider's call and not the app's.
 
 The interesting part is the tie. Most of the time all three stations catch the *same* onward train, so the arrival time is identical and the earliest station wins outright — you board several minutes ahead of everyone who stayed on, which is the difference between a seat and a shoulder. The view labels those stations "same train" and calls the verdict "beat the rush". Less often, an earlier station catches a strictly earlier train that's already gone by the time you'd reach the later stops, and the verdict says how many minutes that saves.
 

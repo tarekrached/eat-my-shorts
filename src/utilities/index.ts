@@ -99,7 +99,7 @@ export const buildInitialSettings = (
     homeWalkingMinutes,
     workWalkingMinutes,
     pollingIntervalSeconds: 60,
-    minTransferMinutes: 3,
+    transferBufferSeconds: 0,
     currentBartStation: active.currentBartStation,
     bartDirection: active.bartDirection,
     bartMinutes: active.bartMinutes,

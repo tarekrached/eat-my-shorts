@@ -24,12 +24,13 @@ export interface Settings {
   workWalkingMinutes: number
   pollingIntervalSeconds: number
   /**
-   * Shortest transfer you'd actually bet on making. BART publishes plenty of
-   * one-minute connections in the Oakland wye that are really the train you're
-   * about to watch leave, so anything under this is treated as a sprint rather
-   * than a plan.
+   * Slack when deciding which connections count, in seconds so it can be tuned
+   * finely and go negative. Zero by default: the wye platforms are about thirty
+   * feet across, so stepping between trains costs nothing. Negative values
+   * accept a train scheduled to leave just before you land, which is untimed
+   * and sometimes still there.
    */
-  minTransferMinutes: number
+  transferBufferSeconds: number
   // Active/flattened fields (copied from selected preset; read by existing selectors)
   currentBartStation: string
   bartDirection: Direction

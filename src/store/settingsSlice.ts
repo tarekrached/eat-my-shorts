@@ -13,7 +13,7 @@ interface PersistedSettings {
   homeWalkingMinutes: number
   workWalkingMinutes: number
   pollingIntervalSeconds: number
-  minTransferMinutes: number
+  transferBufferSeconds: number
   trainColors?: TrainColor[]
 }
 
@@ -38,7 +38,7 @@ const saveToStorage = (state: Settings): void => {
       homeWalkingMinutes: state.homeWalkingMinutes,
       workWalkingMinutes: state.workWalkingMinutes,
       pollingIntervalSeconds: state.pollingIntervalSeconds,
-      minTransferMinutes: state.minTransferMinutes,
+      transferBufferSeconds: state.transferBufferSeconds,
       trainColors: state.trainColors,
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted))
@@ -59,12 +59,12 @@ const initialState: Settings = {
   homeStation: saved?.homeStation ?? 'NBRK',
   workStation: saved?.workStation ?? 'MONT',
   pollingIntervalSeconds: saved?.pollingIntervalSeconds ?? 60,
-  // Briefly shipped with a default of 3, on the mistaken assumption that a
-  // short connection was risky. Every wye transfer is cross-platform, so a
-  // one-minute connection is fine when the train is actually there, and a
-  // persisted 3 is a value nobody chose. Treat it as unset.
-  minTransferMinutes:
-    saved?.minTransferMinutes === 3 ? 1 : saved?.minTransferMinutes ?? 1,
+  // Deliberately a new key. This shipped twice as `minTransferMinutes`,
+  // defaulting first to 3 and then to 1, both on the wrong theory that a short
+  // connection was risky. Those stored values were never anyone's choice, so
+  // rather than guess which numbers to override, the old key is abandoned and
+  // everyone starts again at zero.
+  transferBufferSeconds: saved?.transferBufferSeconds ?? 0,
   trainColors: saved?.trainColors,
 }
 
@@ -131,8 +131,8 @@ const settingsSlice = createSlice({
       saveToStorage(next)
       return next
     },
-    setMinTransferMinutes: (state, action: PayloadAction<number>) => {
-      const next: Settings = { ...state, minTransferMinutes: action.payload }
+    setTransferBuffer: (state, action: PayloadAction<number>) => {
+      const next: Settings = { ...state, transferBufferSeconds: action.payload }
       saveToStorage(next)
       return next
     },
@@ -148,6 +148,6 @@ const settingsSlice = createSlice({
   },
 })
 
-export const { setActivePreset, updatePreset, setAutoSwitch, saveStations, setTrainColors, setPollingInterval, setMinTransferMinutes, updateSettings } =
+export const { setActivePreset, updatePreset, setAutoSwitch, saveStations, setTrainColors, setPollingInterval, setTransferBuffer, updateSettings } =
   settingsSlice.actions
 export default settingsSlice.reducer

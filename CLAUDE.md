@@ -98,7 +98,8 @@ eat-my-shorts/
 - **Per-station breakdown**: when you arrive, how long you wait, which onward train you catch, when you get home
 - **Verdict**: the station that gets you home soonest. When several catch the same onward train, the earliest one wins — same arrival, emptier train ("beat the rush"). Otherwise it reports the minutes saved.
 - **Track view** (`TransferRide.track`): the primary feature. A grid of where every Richmond-bound train is right now relative to 12th/19th/MacArthur, alongside your own train. Your row is arrival; theirs is departure, since that's when you'd need to be on the platform. `null` renders as `·` for been-and-gone. Answers the question a platform can't: the connection may not be here, but it may be sitting at 19th, in which case staying on catches it.
-- **Connection buffer**: `settings.minTransferMinutes` (default 1) with a hard floor of `DOORS_SECONDS` (60). Every wye transfer is cross-platform, so a one-minute connection is real; an earlier version demoted these as "sprints" and was wrong. Note the slice migrates a persisted 3 (that bad default) back to 1.
+- **Connection buffer**: `settings.transferBufferSeconds`, default 0, may be negative. The wye platforms are ~30ft across so a transfer costs no time; a negative buffer accepts a train scheduled out just before you land, which is untimed but often still there. Two earlier versions got this wrong (`minTransferMinutes` defaulting to 3, then 1, with a 60s hard floor, framed as avoiding "sprints") — there is no sprint and no floor. The old storage key is abandoned rather than migrated.
+- **Sub-minute precision matters**: track countdowns render as `m:ss` under 10 minutes and tick every second off absolute times. Rounded minutes cannot express the 10-15s margins this view exists to show.
 - **Destination** comes from the active preset (the opposite end), not hardcoded
 
 ### 3. Inline Preview (`/inline`) — EXPERIMENTAL

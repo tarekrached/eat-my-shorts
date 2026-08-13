@@ -443,3 +443,7 @@ a:visited {
   color: #111;
   font-weight: bold;
 }
+
+.transfer-magic table.track td.tight {
+  color: #b06000;
+}

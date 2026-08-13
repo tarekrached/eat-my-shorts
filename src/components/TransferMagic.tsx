@@ -14,15 +14,38 @@ const WYE = [
 ]
 
 /**
+ * Countdowns are formatted to the second, not rounded to minutes, because the
+ * decision this table supports turns on ten or fifteen seconds: whether the
+ * other train is still standing there when you land. "4m" and "5m" can be forty
+ * seconds apart or a hundred, which is the difference between walking on and
+ * watching it go. Minutes only take over past ten, where precision stops
+ * meaning anything.
+ */
+const countdown = (seconds: number): string => {
+  const sign = seconds < 0 ? '−' : ''
+  const abs = Math.abs(seconds)
+  if (abs >= 600) return `${sign}${Math.round(abs / 60)}m`
+  return `${sign}${Math.floor(abs / 60)}:${String(abs % 60).padStart(2, '0')}`
+}
+
+/**
  * Where every train is on the other track, relative to the three stations.
  *
  * Your row is when you get to each station; the rest are when those trains
  * leave each station, which is the moment you'd need to already be standing
- * there. A dot means it's been and gone. So a row reading "· 2m 5m" is a train
- * that has cleared 12th and is at 19th right now, which is precisely the case
- * you can't see from a platform: not here, but still catchable if you stay on.
+ * there. So a row reading "· 2:10 5:40" is a train that has cleared 12th and is
+ * at 19th right now, which is exactly the case you can't see from a platform:
+ * not here, but still yours if you stay on.
+ *
+ * Cells are marked against your own arrival at that station. Bold means the
+ * train is still there when you land. "Tight" means it's scheduled out just
+ * before you arrive, which is untimed and worth a try rather than a write-off,
+ * so it's shown rather than hidden.
  */
-function TrackView({ ride }: { ride: TransferRide }) {
+function TrackView({ ride, bufferSeconds }: { ride: TransferRide; bufferSeconds: number }) {
+  const now = dayjs()
+  const you = ride.track.find((t) => t.isYou)
+
   return (
     <table className="track">
       <thead>
@@ -41,19 +64,29 @@ function TrackView({ ride }: { ride: TransferRide }) {
               {train.isYou ? 'you' : train.destination}
             </th>
             {WYE.map(({ station }) => {
-              const minutes = train.minutesTo[station]
-              const catchable = train.catchableAt.includes(station)
+              const at = train.at[station]
+              if (!at) {
+                return (
+                  <td key={station} className="gone">
+                    ·
+                  </td>
+                )
+              }
+              const seconds = at.diff(now, 'second')
+              const youArrive = you?.at[station]
+              const margin = youArrive ? at.diff(youArrive, 'second') : null
+              const catchable =
+                !train.isYou && margin !== null && margin >= bufferSeconds
+              const tight =
+                !train.isYou && margin !== null && !catchable && margin > -90
               return (
                 <td
                   key={station}
-                  className={[
-                    minutes === null ? 'gone' : '',
-                    catchable ? 'catchable' : '',
-                  ]
+                  className={[catchable ? 'catchable' : '', tight ? 'tight' : '']
                     .filter(Boolean)
                     .join(' ')}
                 >
-                  {minutes === null ? '·' : `${minutes}m`}
+                  {countdown(seconds)}
                 </td>
               )
             })}
@@ -121,6 +154,9 @@ function TransferMagic() {
   const gtfsRt = useSelector((state: RootState) => state.gtfsRt)
   const pollingInterval = useSelector(
     (state: RootState) => state.settings.pollingIntervalSeconds
+  )
+  const transferBufferSeconds = useSelector(
+    (state: RootState) => state.settings.transferBufferSeconds
   )
   const { loading, fetchedAt, destinationName, rides, noTransferNeeded } =
     useSelector(transferMagicSelector)
@@ -210,7 +246,7 @@ function TransferMagic() {
             </button>
           </div>
 
-          <TrackView ride={ride} />
+          <TrackView ride={ride} bufferSeconds={transferBufferSeconds} />
 
           {ride.recommendedStation && (
             <div className="verdict">
