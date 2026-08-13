@@ -42,6 +42,16 @@ export interface InlineRow {
   unresolved: null | 'no-route' | 'no-connection'
 }
 
+/**
+ * Whether a row's arrival time depends on a connecting train, and is therefore
+ * worth watching for drift. A through train's arrival is read straight off its
+ * own stop times with no second train involved, so there's nothing there to
+ * move; likewise a train with no route home at all. Only a transfer, or an
+ * expected transfer whose onward train hasn't been published yet, can flap.
+ */
+export const dependsOnConnection = (row: InlineRow): boolean =>
+  row.transferStation !== null || row.unresolved === 'no-connection'
+
 export interface InlinePreview {
   loading: boolean
   fetchedAt: dayjs.Dayjs | null

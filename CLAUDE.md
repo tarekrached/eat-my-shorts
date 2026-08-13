@@ -102,7 +102,7 @@ eat-my-shorts/
 ### 3. Inline Preview (`/inline`) — EXPERIMENTAL
 - **Under test**: whether the transfer verdict belongs on the departure list rather than on its own page
 - **Real arrival times**: read from stop times (direct or via the recommended transfer) instead of the main view's fixed `bartMinutes` estimate, which is wrong for any train that doesn't reach the destination
-- **Drift instrumentation**: per-row, per-poll samples of the predicted arrival and recommended station, reported as `drift ±Nm · station changed N× · N polls`. In-memory and per-session
+- **Drift instrumentation**: per-poll samples of the predicted arrival and recommended station, reported as `drift ±Nm · station changed N× · N polls`. In-memory and per-session. Only on rows whose arrival depends on a connecting train (`dependsOnConnection`) — a through train's arrival comes off its own stop times and has nothing to drift
 - **Verdict pending**: if predictions only settle once you're in the Transbay tube, this view should be deleted and Transfer Magic left standalone
 - Self-contained in `selectors/inlinePreview.ts` + `components/InlinePreview.tsx` so it can be removed cleanly
 

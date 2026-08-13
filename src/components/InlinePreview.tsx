@@ -5,6 +5,7 @@ import dayjs from 'dayjs'
 import { fetchGtfsRtData } from '../store/gtfsRtSlice'
 import { inlinePreviewSelector } from '../selectors'
 import type { RootState, AppDispatch } from '../store'
+import { dependsOnConnection } from '../selectors/inlinePreview'
 import type { InlineRow } from '../selectors/inlinePreview'
 
 /**
@@ -42,6 +43,7 @@ function Row({ row, drift }: { row: InlineRow; drift: Drift | undefined }) {
   const trainInMinutes = Math.floor(train.at.diff(now, 'second') / 60)
   const isMissed = train.leaveBy.diff(now, 'second') < 0
 
+  const instrumented = dependsOnConnection(row)
   const samples = drift?.stations.length ?? 0
   const spread = drift ? spreadMinutes(drift.homeAts) : 0
   const flips = drift ? flipCount(drift.stations) : 0
@@ -84,7 +86,7 @@ function Row({ row, drift }: { row: InlineRow; drift: Drift | undefined }) {
         {row.unresolved === 'no-connection' && (
           <span>onward train not published yet</span>
         )}
-        {samples > 1 && (
+        {instrumented && samples > 1 && (
           <span className={spread > 2 || flips > 0 ? 'warn' : ''}>
             drift ±{spread}m
             {flips > 0 && ` · station changed ${flips}×`}
@@ -135,6 +137,7 @@ function InlinePreview() {
     if (!pollStamp || lastSampledRef.current === pollStamp) return
     lastSampledRef.current = pollStamp
     for (const row of rows) {
+      if (!dependsOnConnection(row)) continue
       const existing = driftRef.current.get(row.train.tripId) ?? { homeAts: [], stations: [] }
       // Record the station on every poll, including polls where the answer went
       // away entirely: a row flapping between "via 12th" and no route at all is
