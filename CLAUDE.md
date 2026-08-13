@@ -93,9 +93,11 @@ eat-my-shorts/
 - **Configurable polling**: Default 60s, adjustable from 15s to 5min in settings
 
 ### 2. Transfer Magic (`/transfer-magic`)
-- **Experimental feature**: Analyzes transfer windows between Oakland stations (12TH, 19TH, MCAR)
-- **Source/Target trains**: Shows which Yellow line trains can connect to Orange/Red line trains heading North
-- **Per-station breakdown**: Departure times at each station for both source and target trains
+- **The question it answers**: coming home from SF on a train that doesn't reach your destination (a Yellow line train, which turns east at MacArthur), which Oakland station do you get off at — 12TH, 19TH, or MCAR?
+- **Ride picker**: defaults to the next train heading into the Oakland wye; `‹ ›` steps through the other candidates
+- **Per-station breakdown**: when you arrive, how long you wait, which onward train you catch, when you get home
+- **Verdict**: the station that gets you home soonest. When several catch the same onward train, the earliest one wins — same arrival, emptier train ("beat the rush"). Otherwise it reports the minutes saved.
+- **Destination** comes from the active preset (the opposite end), not hardcoded
 
 ### 3. Settings Page (`/settings`)
 - **Home/work station selection**: Dropdown of all BART stations
@@ -232,12 +234,15 @@ The worker source is in `worker/src/index.ts`. It adds `Access-Control-Allow-Ori
   - Sorts by departure time
 
 ### transferMagicSelector
-- **Purpose**: Analyzes transfer opportunities at Oakland stations
+- **Purpose**: Picks the Oakland station to change trains at
 - **Logic**:
-  - Hardcoded stations: 12TH, 19TH, MCAR
-  - Target: Orange/Red trains heading North
-  - Source: Yellow trains heading North
-  - Groups trains by station, computes per-station departure minutes
+  - Transfer stations: 12TH, 19TH, MCAR (the Oakland wye)
+  - **Candidate rides**: trips that serve the wye in 12TH → 19TH → MCAR order with at least one stop still ahead, and that never reach the destination themselves
+  - **Connections**: any trip whose own stop sequence contains the destination *after* the transfer station. Not filtered by color or direction — see below
+  - Pairs each ride against each station with a 60s transfer buffer, ranks by arrival at the destination, and breaks ties toward the earliest station
+- **Two traps this selector exists to avoid** (both cost a debugging session):
+  - **`direction_id` is useless on BART's RT feed** — every trip carries `direction_id: 0`, so `direction === 'North'` matches zero trips. `GtfsTripUpdate.direction` is therefore always `'South'` and must not be filtered on. Use stop-sequence order (`currentStationEtdsSelector` does this via `inferDirection`) or destination reachability (this selector).
+  - **Line color doesn't imply direction** — Red is both Richmond-bound and Millbrae-bound, Orange is both Richmond-bound and Berryessa-bound, at the same stations in the same feed. Test the stop sequence, not the color.
 
 ### closestStationSelector
 - **Purpose**: Finds nearest BART station using geolocation and D3-geo

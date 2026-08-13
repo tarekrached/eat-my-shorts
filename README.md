@@ -9,7 +9,7 @@ A mobile-first web app for tracking Bay Area Rapid Transit (BART) train times be
 - **Real-time train departures** via GTFS-RT protobuf feeds — shows upcoming trains from your station with color-coded lines, seconds countdown, and estimated arrival at your destination
 - **Configurable settings** — pick home/work stations, walking times, polling interval, and train line filters from an in-app settings page
 - **Auto-switching presets** — automatically toggles between "home → work" and "work → home" based on time of day
-- **Transfer analysis** — experimental view analyzing transfer windows between Oakland stations (12th St, 19th St, MacArthur)
+- **Transfer Magic** — tells you which Oakland station to get off at when the train you're on doesn't reach your destination ([details](#transfer-magic))
 - **BART service alerts** — displays real-time advisories from GTFS-RT alert feed
 - **PWA** — installable as a homescreen app with offline caching via service worker
 
@@ -87,6 +87,21 @@ eat-my-shorts/
 2. **GTFS-RT feeds** (trip updates + alerts) are fetched as protobuf every 60s (configurable), decoded with protobufjs, and enriched with static lookup data
 3. **Selectors** filter trips by station, direction, and line color, then compute departure countdowns and arrival estimates
 4. **Components** re-render every 1s for smooth countdown ticking
+
+### Transfer Magic
+
+Coming home from SF on a Yellow (Antioch/Pittsburg) train, you can't stay on it — it turns east at MacArthur and never reaches a Richmond-line station. You get three chances to change trains in the Oakland wye: 12th St, 19th St, MacArthur. Transfer Magic answers the one question that actually matters while you're in the tube: **which one do I get off at?**
+
+Pick the train you're on (it defaults to the next one heading into Oakland), and each station shows when you'd arrive, how long you'd wait, which onward train you'd catch, and when you'd be home. The recommended station is the one that gets you home soonest.
+
+The interesting part is the tie. Most of the time all three stations catch the *same* onward train, so the arrival time is identical and the earliest station wins outright — you board several minutes ahead of everyone who stayed on, which is the difference between a seat and a shoulder. The view labels those stations "same train" and calls the verdict "beat the rush". Less often, an earlier station catches a strictly earlier train that's already gone by the time you'd reach the later stops, and the verdict says how many minutes that saves.
+
+Two things `transferMagicSelector` deliberately does not do, both learned the hard way:
+
+- **It ignores GTFS `direction_id`.** BART publishes `direction_id: 0` on every trip in the realtime feed, so a `direction === 'North'` filter matches nothing at all. This is what made the view render blank.
+- **It doesn't filter onward trains by line color.** Roughly half the Red trains through Oakland are Millbrae-bound and half the Orange trains are Berryessa-bound; the color alone doesn't tell you which way a train is going. Instead, a trip counts as a connection if its own remaining stop sequence contains your destination station — one test that handles direction and line branching together.
+
+Your destination comes from the active preset (the far end of it), so the view follows your settings rather than hardcoding North Berkeley.
 
 ### CORS Proxy
 
