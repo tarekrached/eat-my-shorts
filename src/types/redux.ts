@@ -23,6 +23,13 @@ export interface Settings {
   homeWalkingMinutes: number
   workWalkingMinutes: number
   pollingIntervalSeconds: number
+  /**
+   * Shortest transfer you'd actually bet on making. BART publishes plenty of
+   * one-minute connections in the Oakland wye that are really the train you're
+   * about to watch leave, so anything under this is treated as a sprint rather
+   * than a plan.
+   */
+  minTransferMinutes: number
   // Active/flattened fields (copied from selected preset; read by existing selectors)
   currentBartStation: string
   bartDirection: Direction

@@ -49,6 +49,17 @@ function StationRow({ option }: { option: TransferOption }) {
           <span className="home-time">{option.homeAt?.format('h:mm a')}</span>
         </div>
       )}
+      {reachable && option.sprint && (
+        <div className="transfer-detail sprint">
+          <span>🏃 {option.sprint.waitMinutes}m if you run</span>
+          <span
+            className="color"
+            style={{ backgroundColor: option.sprint.train.hexcolor }}
+          />
+          <span className="transfer-connection">{option.sprint.train.destination}</span>
+          <span className="home-time">{option.sprint.homeAt.format('h:mm a')}</span>
+        </div>
+      )}
     </div>
   )
 }
@@ -169,6 +180,15 @@ function TransferMagic() {
                     ? `${ride.savesMinutes}m sooner than waiting for ${ride.savesAgainst}`
                     : 'your only connection on this train'}
               </div>
+              {ride.sprintStation && (
+                <div className="verdict-sprint">
+                  🏃{' '}
+                  {ride.sprintStation === ride.recommendedStation
+                    ? `the ${ride.sprintWaitMinutes}m connection here`
+                    : `${ride.sprintStationName} in ${ride.sprintWaitMinutes}m`}{' '}
+                  gets you home {ride.sprintSavesMinutes}m sooner, if you make it
+                </div>
+              )}
             </div>
           )}
 

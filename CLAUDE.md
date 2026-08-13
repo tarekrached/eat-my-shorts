@@ -97,6 +97,7 @@ eat-my-shorts/
 - **Ride picker**: defaults to the next train heading into the Oakland wye; `‹ ›` steps through the other candidates
 - **Per-station breakdown**: when you arrive, how long you wait, which onward train you catch, when you get home
 - **Verdict**: the station that gets you home soonest. When several catch the same onward train, the earliest one wins — same arrival, emptier train ("beat the rush"). Otherwise it reports the minutes saved.
+- **Plannable vs sprint**: only connections at least `settings.minTransferMinutes` away (default 3) drive the recommendation. Shorter ones are surfaced separately as a sprint. This is not cosmetic — BART's Aug 10 2026 schedule removed the hold on Antioch-bound Yellow trains at 19th St, so the evening Orange connection there is scheduled at one minute and is routinely missed. Ranking on arrival alone recommends exactly the connection that fails. Below `DOORS_SECONDS` (60) nothing is offered at all.
 - **Destination** comes from the active preset (the opposite end), not hardcoded
 
 ### 3. Inline Preview (`/inline`) — EXPERIMENTAL

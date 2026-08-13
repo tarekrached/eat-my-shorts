@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { updatePreset, setAutoSwitch, saveStations, setTrainColors, setPollingInterval } from '../store/settingsSlice'
+import { updatePreset, setAutoSwitch, saveStations, setTrainColors, setPollingInterval, setMinTransferMinutes } from '../store/settingsSlice'
 import { refreshGtfsStatic } from '../store/gtfsRtSlice'
 import type { RootState, AppDispatch } from '../store'
 import type { TrainColor } from '../types'
@@ -45,6 +45,7 @@ function Settings() {
   const [autoSwitch, setAutoSwitchLocal] = useState(settings.autoSwitch)
   const [autoSwitchHour, setAutoSwitchHour] = useState(settings.autoSwitchHour)
   const [pollingInterval, setPollingIntervalLocal] = useState(settings.pollingIntervalSeconds)
+  const [minTransfer, setMinTransferLocal] = useState(settings.minTransferMinutes)
   const allColors = LINE_COLORS.map((c) => c.key)
   const [trainColors, setLocalTrainColors] = useState<TrainColor[]>(
     settings.trainColors ?? allColors
@@ -114,6 +115,7 @@ function Settings() {
       dispatch(setAutoSwitch({ autoSwitch, autoSwitchHour }))
       dispatch(setTrainColors(colors))
       dispatch(setPollingInterval(pollingInterval))
+      dispatch(setMinTransferMinutes(minTransfer))
       dispatch(
         saveStations({
           homeStation,
@@ -227,6 +229,24 @@ function Settings() {
             </option>
           ))}
         </select>
+      </div>
+
+      <div className="settings-field" style={{ marginTop: '0.75rem' }}>
+        <label>Shortest transfer you&rsquo;d bet on</label>
+        <select
+          value={minTransfer}
+          onChange={(e) => setMinTransferLocal(Number(e.target.value))}
+        >
+          {[1, 2, 3, 4, 5].map((value) => (
+            <option key={value} value={value}>
+              {value} min
+            </option>
+          ))}
+        </select>
+        <p className="settings-hint">
+          Transfer Magic plans around connections at least this long. Anything
+          shorter is shown as a sprint instead of a recommendation.
+        </p>
       </div>
 
       <div className="settings-field" style={{ marginTop: '0.75rem' }}>

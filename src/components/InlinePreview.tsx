@@ -79,6 +79,11 @@ function Row({ row, drift }: { row: InlineRow; drift: Drift | undefined }) {
       </div>
       <div className="inline-drift">
         {row.transferStation && <span>wait {row.waitMinutes}m</span>}
+        {row.sprintHomeAt && (
+          <span className="sprint">
+            🏃 {row.sprintWaitMinutes}m → {row.sprintHomeAt.format('h:mm a')}
+          </span>
+        )}
         {/* Blue and Green trains stop here but never touch the Oakland wye, so
             there is no way home on them. The main view hides this behind a
             fixed-duration estimate and quotes an arrival time anyway. */}

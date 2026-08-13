@@ -166,6 +166,17 @@ a:visited {
   margin-top: 0.15rem;
 }
 
+.transfer-magic .verdict-sprint,
+.transfer-magic .transfer-detail.sprint {
+  font-size: 0.75rem;
+  color: #b06000;
+  margin-top: 0.2rem;
+}
+
+.transfer-magic .transfer-detail.sprint {
+  padding-left: 0.1rem;
+}
+
 .transfer-magic .transfer-option {
   margin-bottom: 0.6rem;
   padding-left: 0.4rem;
@@ -367,4 +378,14 @@ a:visited {
   height: 0.75em;
   border: 1px solid #666;
   border-radius: 2px;
+}
+
+.settings-page .settings-hint {
+  font-size: 0.72rem;
+  color: #999;
+  margin: 0.2rem 0 0;
+}
+
+.inline-preview .inline-drift .sprint {
+  color: #b06000;
 }

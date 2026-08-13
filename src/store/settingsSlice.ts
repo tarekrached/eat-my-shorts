@@ -13,6 +13,7 @@ interface PersistedSettings {
   homeWalkingMinutes: number
   workWalkingMinutes: number
   pollingIntervalSeconds: number
+  minTransferMinutes: number
   trainColors?: TrainColor[]
 }
 
@@ -37,6 +38,7 @@ const saveToStorage = (state: Settings): void => {
       homeWalkingMinutes: state.homeWalkingMinutes,
       workWalkingMinutes: state.workWalkingMinutes,
       pollingIntervalSeconds: state.pollingIntervalSeconds,
+      minTransferMinutes: state.minTransferMinutes,
       trainColors: state.trainColors,
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted))
@@ -57,6 +59,7 @@ const initialState: Settings = {
   homeStation: saved?.homeStation ?? 'NBRK',
   workStation: saved?.workStation ?? 'MONT',
   pollingIntervalSeconds: saved?.pollingIntervalSeconds ?? 60,
+  minTransferMinutes: saved?.minTransferMinutes ?? 3,
   trainColors: saved?.trainColors,
 }
 
@@ -123,6 +126,11 @@ const settingsSlice = createSlice({
       saveToStorage(next)
       return next
     },
+    setMinTransferMinutes: (state, action: PayloadAction<number>) => {
+      const next: Settings = { ...state, minTransferMinutes: action.payload }
+      saveToStorage(next)
+      return next
+    },
     setPollingInterval: (state, action: PayloadAction<number>) => {
       const next: Settings = { ...state, pollingIntervalSeconds: action.payload }
       saveToStorage(next)
@@ -135,6 +143,6 @@ const settingsSlice = createSlice({
   },
 })
 
-export const { setActivePreset, updatePreset, setAutoSwitch, saveStations, setTrainColors, setPollingInterval, updateSettings } =
+export const { setActivePreset, updatePreset, setAutoSwitch, saveStations, setTrainColors, setPollingInterval, setMinTransferMinutes, updateSettings } =
   settingsSlice.actions
 export default settingsSlice.reducer

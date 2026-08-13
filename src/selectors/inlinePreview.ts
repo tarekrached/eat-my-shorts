@@ -29,6 +29,9 @@ export interface InlineRow {
   transferStationName: string | null
   waitMinutes: number
   connectionHexcolor: string | null
+  /** an earlier train at this station that you'd have to run for */
+  sprintWaitMinutes: number
+  sprintHomeAt: dayjs.Dayjs | null
   /** arrival at the destination station, from real stop times */
   arriveAt: dayjs.Dayjs | null
   /** arrival plus the walk at the far end */
@@ -98,6 +101,8 @@ export const inlinePreviewSelector = createSelector(
             : null,
           waitMinutes: option?.waitMinutes ?? 0,
           connectionHexcolor: option?.connection?.hexcolor ?? null,
+          sprintWaitMinutes: option?.sprint?.waitMinutes ?? 0,
+          sprintHomeAt: option?.sprint?.homeAt ?? null,
           arriveAt: option?.arriveAt ?? null,
           homeAt: option?.homeAt ?? null,
           unresolved: option ? null : 'no-connection',
@@ -116,6 +121,8 @@ export const inlinePreviewSelector = createSelector(
         transferStationName: null,
         waitMinutes: 0,
         connectionHexcolor: null,
+        sprintWaitMinutes: 0,
+        sprintHomeAt: null,
         arriveAt: arrival ? dayjs.unix(arrival) : null,
         homeAt: arrival ? dayjs.unix(arrival).add(destWalkingMinutes, 'minute') : null,
         unresolved: arrival ? null : 'no-route',

@@ -95,6 +95,10 @@ Coming home from SF on a Yellow (Antioch/Pittsburg) train, you can't stay on it 
 
 Pick the train you're on (it defaults to the next one heading into Oakland), and each station shows when you'd arrive, how long you'd wait, which onward train you'd catch, and when you'd be home. The recommended station is the one that gets you home soonest.
 
+**Not every published connection is a real one.** BART's August 10, 2026 schedule stopped holding Antioch-bound Yellow trains at 19th St for the Orange ("Regular Antioch-bound Yellow Line trains are often delayed while waiting at 19th Street/Oakland for an Orange Line service" was the problem they set out to fix). In the evening the result is an Orange connection scheduled at *one minute*: you arrive as it leaves. Ranking purely by arrival time would recommend that one-minute dash over a Red train at 12th you'd comfortably make, which is confidently recommending the option that fails.
+
+So connections split in two. Anything at least `minTransferMinutes` away (default 3, set in Settings) is something you can plan on, and only those drive the recommendation. Anything shorter is shown separately as a sprint, with what it would save if you make it. Below 60 seconds it isn't offered at all, because that's a train with its doors closing.
+
 The interesting part is the tie. Most of the time all three stations catch the *same* onward train, so the arrival time is identical and the earliest station wins outright — you board several minutes ahead of everyone who stayed on, which is the difference between a seat and a shoulder. The view labels those stations "same train" and calls the verdict "beat the rush". Less often, an earlier station catches a strictly earlier train that's already gone by the time you'd reach the later stops, and the verdict says how many minutes that saves.
 
 Two things `transferMagicSelector` deliberately does not do, both learned the hard way:
