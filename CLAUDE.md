@@ -99,7 +99,14 @@ eat-my-shorts/
 - **Verdict**: the station that gets you home soonest. When several catch the same onward train, the earliest one wins — same arrival, emptier train ("beat the rush"). Otherwise it reports the minutes saved.
 - **Destination** comes from the active preset (the opposite end), not hardcoded
 
-### 3. Settings Page (`/settings`)
+### 3. Inline Preview (`/inline`) — EXPERIMENTAL
+- **Under test**: whether the transfer verdict belongs on the departure list rather than on its own page
+- **Real arrival times**: read from stop times (direct or via the recommended transfer) instead of the main view's fixed `bartMinutes` estimate, which is wrong for any train that doesn't reach the destination
+- **Drift instrumentation**: per-row, per-poll samples of the predicted arrival and recommended station, reported as `drift ±Nm · station changed N× · N polls`. In-memory and per-session
+- **Verdict pending**: if predictions only settle once you're in the Transbay tube, this view should be deleted and Transfer Magic left standalone
+- Self-contained in `selectors/inlinePreview.ts` + `components/InlinePreview.tsx` so it can be removed cleanly
+
+### 4. Settings Page (`/settings`)
 - **Home/work station selection**: Dropdown of all BART stations
 - **Walking times**: Minutes to walk from each station
 - **Auto-switch**: Toggle presets by time of day (configurable hour)
@@ -107,7 +114,7 @@ eat-my-shorts/
 - **Train line filter**: Checkboxes for Red, Orange, Yellow, Green, Blue
 - **Auto-computed**: Direction and travel time are inferred from station pair via BART Schedule API and route data
 
-### 4. Auto-Switching Presets
+### 5. Auto-Switching Presets
 - **Time-based**: Selects "home → work" before a configurable hour (default noon), "work → home" after
 - **Configurable**: Two presets with station, direction, and travel time
 - **Manual override**: Click "switch" to toggle

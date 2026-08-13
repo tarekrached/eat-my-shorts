@@ -11,6 +11,7 @@ import { refreshGtfsStatic } from './store/gtfsRtSlice'
 import { isStale } from './services/gtfs-static'
 import Trip from './components/Trip'
 import TransferMagic from './components/TransferMagic'
+import InlinePreview from './components/InlinePreview'
 import Settings from './components/Settings'
 
 // Configure dayjs
@@ -32,6 +33,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Routes>
             <Route path="/" element={<Trip />} />
             <Route path="/transfer-magic" element={<TransferMagic />} />
+            <Route path="/inline" element={<InlinePreview />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </div>

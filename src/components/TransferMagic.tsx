@@ -92,7 +92,9 @@ function TransferMagic() {
     <div className="transfer-magic">
       <div className="top-menu">
         <div>transfer → {destinationName}</div>
-        <Link to="/">Home</Link>
+        <span>
+          <Link to="/">Home</Link> <Link to="/inline">Inline</Link>
+        </span>
       </div>
 
       {loading && !rides.length && <div className="loading">loading</div>}

@@ -10,6 +10,7 @@ A mobile-first web app for tracking Bay Area Rapid Transit (BART) train times be
 - **Configurable settings** — pick home/work stations, walking times, polling interval, and train line filters from an in-app settings page
 - **Auto-switching presets** — automatically toggles between "home → work" and "work → home" based on time of day
 - **Transfer Magic** — tells you which Oakland station to get off at when the train you're on doesn't reach your destination ([details](#transfer-magic))
+- **Inline preview** (`/inline`, experimental) — the departure list with the transfer verdict on every row, and drift instrumentation to test whether those predictions are stable enough to act on ([details](#inline-preview-experimental))
 - **BART service alerts** — displays real-time advisories from GTFS-RT alert feed
 - **PWA** — installable as a homescreen app with offline caching via service worker
 
@@ -102,6 +103,16 @@ Two things `transferMagicSelector` deliberately does not do, both learned the ha
 - **It doesn't filter onward trains by line color.** Roughly half the Red trains through Oakland are Millbrae-bound and half the Orange trains are Berryessa-bound; the color alone doesn't tell you which way a train is going. Instead, a trip counts as a connection if its own remaining stop sequence contains your destination station — one test that handles direction and line branching together.
 
 Your destination comes from the active preset (the far end of it), so the view follows your settings rather than hardcoding North Berkeley.
+
+### Inline preview (experimental)
+
+`/inline` is a third view sitting alongside the other two, testing whether Transfer Magic should be a page you navigate to at all. It shows the same departure list as the main view, but with the recommended transfer station and a real arrival time on every row, so you never leave the list.
+
+It also fixes something the main view gets wrong. The main view estimates arrival as `departure + settings.bartMinutes + walk`, where `bartMinutes` is a fixed number from settings. That's wrong for any train that doesn't reach your destination: it will happily promise you a home time on a Yellow train that never goes there, and on a Blue or Green train that never touches the Oakland wye at all. Here, every arrival is read from real stop times, either directly from the trip's own stop sequence or through the recommended transfer, and trains with no route home are labelled "no Oakland transfer" instead of being given a plausible-looking time.
+
+**The open question is stability.** A transfer arrival predicted from Montgomery depends on a connecting train that hasn't left yet, so it may drift until you're through the tube. Each row therefore records what it was told on every poll and reports how far the answer moved (`drift ±3m`) and how often the recommended station changed (`station changed 2×`). Watch it on the platform and again in the tube. If the numbers settle only once you're under the bay, the standalone transfer view is the right home for this and the inline idea should be dropped.
+
+Drift history is per-session and in-memory, reset by the **Reset drift** button or by leaving the view.
 
 ### CORS Proxy
 

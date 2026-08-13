@@ -221,6 +221,69 @@ a:visited {
   color: #999;
 }
 
+/* Inline preview (experimental) */
+.inline-preview span.color {
+  display: inline-block;
+  width: 0.75em;
+  height: 0.75em;
+  border: 1px solid #666666;
+  flex-shrink: 0;
+}
+
+.inline-preview .inline-note {
+  font-size: 0.75rem;
+  color: #999;
+  margin: 0.4rem 0 0.8rem;
+}
+
+.inline-preview .inline-row {
+  margin-bottom: 0.55rem;
+}
+
+.inline-preview .inline-row.missed {
+  opacity: 0.45;
+}
+
+.inline-preview .inline-main {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.inline-preview .destination {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inline-preview .via {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  color: #999;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.inline-preview .via.direct {
+  opacity: 0.5;
+}
+
+.inline-preview .inline-drift {
+  display: flex;
+  gap: 0.6rem;
+  font-size: 0.7rem;
+  color: #777;
+  padding-left: 1.15em;
+}
+
+.inline-preview .inline-drift .warn {
+  color: #b06000;
+}
+
 .settings-link {
   display: inline-block;
   font-size: 1.25rem;

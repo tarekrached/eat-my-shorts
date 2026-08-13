@@ -1,0 +1,118 @@
+import { createSelector } from 'reselect'
+import dayjs from 'dayjs'
+import type { RootState, EnrichedTrain } from '../types'
+import { currentStationEtdsSelector } from './currentStationEtds'
+import { transferMagicSelector } from './transferMagic'
+
+/**
+ * Inline preview — EXPERIMENTAL, lives at /inline alongside the real views.
+ *
+ * The idea under test: put the transfer verdict on the departure list instead
+ * of on its own page, so you never navigate. The main view currently estimates
+ * arrival as `departure + settings.bartMinutes + walk`, which is a fixed number
+ * from settings and is simply wrong for any train that doesn't reach your
+ * destination — it promises you'll be home at a time no Yellow train can
+ * deliver. Here every arrival time is read out of the trip's own stop sequence
+ * instead: directly for through trains, and via the recommended Oakland
+ * transfer for the ones that need one.
+ *
+ * The open question is whether the transfer arrival is stable enough to act on
+ * while you're standing at Montgomery, twenty-odd minutes upstream of the
+ * transfer itself. The view is instrumented for that (see InlinePreview.tsx);
+ * this selector just produces the numbers.
+ */
+
+export interface InlineRow {
+  train: EnrichedTrain
+  /** null when the train reaches the destination without changing */
+  transferStation: string | null
+  transferStationName: string | null
+  waitMinutes: number
+  connectionHexcolor: string | null
+  /** arrival at the destination station, from real stop times */
+  arriveAt: dayjs.Dayjs | null
+  /** arrival plus the walk at the far end */
+  homeAt: dayjs.Dayjs | null
+  /** true when neither a through trip nor a transfer could be worked out */
+  unresolved: boolean
+}
+
+export interface InlinePreview {
+  loading: boolean
+  fetchedAt: dayjs.Dayjs | null
+  destination: string
+  destinationName: string
+  rows: InlineRow[]
+}
+
+// GTFS station names are far too long to sit next to a destination headsign on
+// a phone ("12th Street / Oakland City Center"), and these three are the only
+// ones this view ever names.
+const SHORT_NAMES: Record<string, string> = {
+  '12TH': '12th',
+  '19TH': '19th',
+  MCAR: 'MacArthur',
+}
+
+const gtfsRtSelector = (state: RootState) => state.gtfsRt
+const settingsSelector = (state: RootState) => state.settings
+
+export const inlinePreviewSelector = createSelector(
+  [currentStationEtdsSelector, transferMagicSelector, gtfsRtSelector, settingsSelector],
+  (etds, transfer, gtfsRt, settings): InlinePreview => {
+    const destWalkingMinutes =
+      settings.activePresetIndex === 0
+        ? settings.workWalkingMinutes
+        : settings.homeWalkingMinutes
+
+    // Rides are keyed by the trip you'd be riding, which is exactly what the
+    // departure list is showing, so the join is a tripId lookup per row.
+    const ridesByTripId = new Map(transfer.rides.map((ride) => [ride.tripId, ride]))
+    const tripsById = new Map(gtfsRt.tripUpdates.map((tu) => [tu.tripId, tu]))
+
+    const rows: InlineRow[] = etds.trains.map((train) => {
+      const ride = ridesByTripId.get(train.tripId)
+
+      if (ride) {
+        const option = ride.options.find((o) => o.recommended)
+        return {
+          train,
+          transferStation: option?.station ?? null,
+          transferStationName: option
+            ? SHORT_NAMES[option.station] ?? option.stationName
+            : null,
+          waitMinutes: option?.waitMinutes ?? 0,
+          connectionHexcolor: option?.connection?.hexcolor ?? null,
+          arriveAt: option?.arriveAt ?? null,
+          homeAt: option?.homeAt ?? null,
+          unresolved: !option,
+        }
+      }
+
+      // No transfer needed: read the arrival straight off this trip's own stop
+      // sequence rather than trusting the fixed bartMinutes estimate.
+      const tu = tripsById.get(train.tripId)
+      const stop = tu?.stopUpdates.find((s) => s.stopId === transfer.destination)
+      const arrival = stop ? stop.arrivalTime || stop.departureTime : 0
+
+      return {
+        train,
+        transferStation: null,
+        transferStationName: null,
+        waitMinutes: 0,
+        connectionHexcolor: null,
+        arriveAt: arrival ? dayjs.unix(arrival) : null,
+        homeAt: arrival ? dayjs.unix(arrival).add(destWalkingMinutes, 'minute') : null,
+        unresolved: !arrival,
+      }
+    })
+
+    return {
+      loading: etds.loading,
+      fetchedAt: gtfsRt.fetchedAt,
+      destination: transfer.destination,
+      destinationName: transfer.destinationName,
+      rows,
+    }
+  }
+)
