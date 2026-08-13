@@ -2,6 +2,7 @@ import { createSelector } from 'reselect'
 import dayjs from 'dayjs'
 import type { RootState } from '../types'
 import type { GtfsTripUpdate } from '../services/gtfs-rt'
+import { inferDirection } from '../utilities'
 
 /**
  * Transfer Magic — "which Oakland station do I get off at?"
@@ -86,6 +87,13 @@ export interface TransferRide {
   savesMinutes: number
   /** the station those saved minutes are measured against */
   savesAgainst: string | null
+  /**
+   * True when this train has already left the station you're travelling from,
+   * so it's one you could actually be sitting on. BART drops stops from a trip
+   * once it has passed them, so a trip that still lists your origin is one that
+   * hasn't collected you yet.
+   */
+  alreadyLeftOrigin: boolean
 }
 
 export interface TransferMagic {
@@ -179,9 +187,30 @@ export const transferMagicSelector = createSelector(
       TRANSFER_STATIONS.map((station) => [station, connectionsAt(station)])
     )
 
-    // Trains you could be on: heading into the Oakland wye with at least one
-    // transfer station still ahead, and not reaching the destination on their
-    // own (if they did, you'd have no reason to change trains).
+    // Trains you could be on: heading your way through the Oakland wye with at
+    // least one transfer station still ahead, and not reaching the destination
+    // on their own (if they did, you'd have no reason to change trains).
+    //
+    // Note that one wye station left is the case that matters most — you're
+    // past 19th, MacArthur is the last chance — so this must not require two.
+    // BART's feed drops stops once a train has passed them, which is why an
+    // "is it in 12th → 19th → MacArthur order" test can't stand in for
+    // direction here: by the time it matters there's only one stop left to
+    // order. Direction comes from the adjacent stop instead, the same way
+    // currentStationEtdsSelector does it, which also makes this work in the
+    // southbound (home → work) direction rather than silently assuming you're
+    // heading north.
+    const headingOurWay = (tu: GtfsTripUpdate, station: string): boolean => {
+      const idx = stopIndex(tu, station)
+      if (idx === -1) return false
+      const next = tu.stopUpdates[idx + 1]?.stopId
+      if (next) return inferDirection(station, next) === settings.bartDirection
+      // Last stop in a truncated trip: infer from where it came from instead.
+      const prev = tu.stopUpdates[idx - 1]?.stopId
+      if (prev) return inferDirection(prev, station) === settings.bartDirection
+      return false
+    }
+
     const rides: TransferRide[] = gtfsRt.tripUpdates
       .filter((tu) => stopIndex(tu, destination) === -1)
       .map((tu) => {
@@ -191,16 +220,15 @@ export const transferMagicSelector = createSelector(
         })).filter((s): s is { station: string; at: number } => s.at !== null)
         return { tu, upcoming }
       })
-      .filter(({ upcoming }) => upcoming.some((s) => s.at > nowUnix))
-      // Serving the wye in 12th → 19th → MacArthur order is what makes it an
-      // inbound trip; the reverse order is a train heading out to SF.
-      .filter(({ tu }) => {
-        const order = TRANSFER_STATIONS.map((s) => stopIndex(tu, s)).filter((i) => i !== -1)
-        return order.length >= 2 && order.every((v, i) => i === 0 || order[i - 1] < v)
+      .filter(({ tu, upcoming }) => {
+        const ahead = upcoming.filter((s) => s.at > nowUnix)
+        return ahead.length > 0 && headingOurWay(tu, ahead[0].station)
       })
       .map(({ tu, upcoming }) => {
         const reachesOakland = Math.min(...upcoming.filter((s) => s.at > nowUnix).map((s) => s.at))
 
+        // Listed in the order this train reaches them, so the view reads like
+        // the ride does. Stations already passed sort to the end.
         const options: TransferOption[] = TRANSFER_STATIONS.map((station) => {
           const youArrive = arrivalAt(tu, station)
           const reachable = youArrive !== null && youArrive > nowUnix
@@ -228,15 +256,26 @@ export const transferMagicSelector = createSelector(
             recommended: false,
             sameTrainAsRecommended: false,
           }
+        }).sort((a, b) => {
+          if (!a.youArriveAt) return b.youArriveAt ? 1 : 0
+          if (!b.youArriveAt) return -1
+          return a.youArriveAt.unix() - b.youArriveAt.unix()
         })
 
         // Get home soonest; among stations that catch that same train, get off
         // at the first one — same arrival, but you board an emptier train.
+        //
+        // "First" means the one you reach first on this train, which is not the
+        // order TRANSFER_STATIONS is written in: northbound you meet 12th then
+        // 19th then MacArthur, southbound the reverse. Ordering by your own
+        // arrival gets it right in both directions.
         const usable = options.filter((o) => o.connection && o.arriveAt)
         const soonestArrival = usable.length
           ? Math.min(...usable.map((o) => o.arriveAt!.unix()))
           : null
-        const winners = usable.filter((o) => o.arriveAt!.unix() === soonestArrival)
+        const winners = usable
+          .filter((o) => o.arriveAt!.unix() === soonestArrival)
+          .sort((a, b) => a.youArriveAt!.unix() - b.youArriveAt!.unix())
         const pick = winners[0] ?? null
 
         if (pick) {
@@ -271,6 +310,7 @@ export const transferMagicSelector = createSelector(
               ? Math.round(nextBest.arriveAt!.diff(pick.arriveAt!, 'second') / 60)
               : 0,
           savesAgainst: nextBest?.stationName ?? null,
+          alreadyLeftOrigin: stopIndex(tu, settings.currentBartStation) === -1,
         }
       })
       .sort((a, b) => a.reachesOaklandAt.diff(b.reachesOaklandAt))

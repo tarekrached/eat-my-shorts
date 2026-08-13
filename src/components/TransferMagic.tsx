@@ -55,7 +55,10 @@ function StationRow({ option }: { option: TransferOption }) {
 
 function TransferMagic() {
   const dispatch = useDispatch<AppDispatch>()
-  const [rideIndex, setRideIndex] = useState(0)
+  // Track the chosen ride by trip, not by position: the list is re-sorted every
+  // poll and trains drop off the front of it as they clear the wye, so a stored
+  // index quietly comes to mean a different train than the one you picked.
+  const [selectedTripId, setSelectedTripId] = useState<string | null>(null)
   const [, setTick] = useState(0)
 
   const gtfsRt = useSelector((state: RootState) => state.gtfsRt)
@@ -86,7 +89,16 @@ function TransferMagic() {
     return () => clearInterval(timer)
   }, [])
 
-  const ride = rides[Math.min(rideIndex, Math.max(rides.length - 1, 0))]
+  // Fall back to the first ride when the selected train has left the list.
+  const selectedIndex = Math.max(
+    0,
+    rides.findIndex((r) => r.tripId === selectedTripId)
+  )
+  const ride = rides[selectedIndex]
+  const step = (delta: number) => {
+    const next = rides[selectedIndex + delta]
+    if (next) setSelectedTripId(next.tripId)
+  }
 
   return (
     <div className="transfer-magic">
@@ -115,8 +127,8 @@ function TransferMagic() {
         <>
           <div className="ride-picker">
             <button
-              onClick={() => setRideIndex((i) => Math.max(0, i - 1))}
-              disabled={rideIndex === 0}
+              onClick={() => step(-1)}
+              disabled={selectedIndex === 0}
               aria-label="earlier train"
             >
               ‹
@@ -129,11 +141,12 @@ function TransferMagic() {
               </div>
               <div className="ride-eta">
                 hits Oakland in {minutesFromNow(ride.reachesOaklandAt)}m
+                {!ride.alreadyLeftOrigin && <> · hasn&rsquo;t picked you up yet</>}
               </div>
             </div>
             <button
-              onClick={() => setRideIndex((i) => Math.min(rides.length - 1, i + 1))}
-              disabled={rideIndex >= rides.length - 1}
+              onClick={() => step(1)}
+              disabled={selectedIndex >= rides.length - 1}
               aria-label="later train"
             >
               ›

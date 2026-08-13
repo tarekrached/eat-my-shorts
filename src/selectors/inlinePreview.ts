@@ -33,8 +33,13 @@ export interface InlineRow {
   arriveAt: dayjs.Dayjs | null
   /** arrival plus the walk at the far end */
   homeAt: dayjs.Dayjs | null
-  /** true when neither a through trip nor a transfer could be worked out */
-  unresolved: boolean
+  /**
+   * Why there's no arrival time. 'no-route' means this train can't get you
+   * there at all (Blue and Green never touch the Oakland wye); 'no-connection'
+   * means the transfer exists but no onward train is published that far ahead,
+   * which is a wait-and-see rather than a dead end.
+   */
+  unresolved: null | 'no-route' | 'no-connection'
 }
 
 export interface InlinePreview {
@@ -85,7 +90,7 @@ export const inlinePreviewSelector = createSelector(
           connectionHexcolor: option?.connection?.hexcolor ?? null,
           arriveAt: option?.arriveAt ?? null,
           homeAt: option?.homeAt ?? null,
-          unresolved: !option,
+          unresolved: option ? null : 'no-connection',
         }
       }
 
@@ -103,7 +108,7 @@ export const inlinePreviewSelector = createSelector(
         connectionHexcolor: null,
         arriveAt: arrival ? dayjs.unix(arrival) : null,
         homeAt: arrival ? dayjs.unix(arrival).add(destWalkingMinutes, 'minute') : null,
-        unresolved: !arrival,
+        unresolved: arrival ? null : 'no-route',
       }
     })
 

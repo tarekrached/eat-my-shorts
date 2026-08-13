@@ -42,7 +42,7 @@ function Row({ row, drift }: { row: InlineRow; drift: Drift | undefined }) {
   const trainInMinutes = Math.floor(train.at.diff(now, 'second') / 60)
   const isMissed = train.leaveBy.diff(now, 'second') < 0
 
-  const samples = drift?.homeAts.length ?? 0
+  const samples = drift?.stations.length ?? 0
   const spread = drift ? spreadMinutes(drift.homeAts) : 0
   const flips = drift ? flipCount(drift.stations) : 0
 
@@ -80,7 +80,10 @@ function Row({ row, drift }: { row: InlineRow; drift: Drift | undefined }) {
         {/* Blue and Green trains stop here but never touch the Oakland wye, so
             there is no way home on them. The main view hides this behind a
             fixed-duration estimate and quotes an arrival time anyway. */}
-        {row.unresolved && <span className="warn">no Oakland transfer</span>}
+        {row.unresolved === 'no-route' && <span className="warn">no route home</span>}
+        {row.unresolved === 'no-connection' && (
+          <span>onward train not published yet</span>
+        )}
         {samples > 1 && (
           <span className={spread > 2 || flips > 0 ? 'warn' : ''}>
             drift ±{spread}m
@@ -132,10 +135,13 @@ function InlinePreview() {
     if (!pollStamp || lastSampledRef.current === pollStamp) return
     lastSampledRef.current = pollStamp
     for (const row of rows) {
-      if (!row.homeAt) continue
       const existing = driftRef.current.get(row.train.tripId) ?? { homeAts: [], stations: [] }
-      existing.homeAts.push(row.homeAt.unix())
+      // Record the station on every poll, including polls where the answer went
+      // away entirely: a row flapping between "via 12th" and no route at all is
+      // the least stable case there is, and skipping those samples would hide
+      // exactly the instability this instrument exists to measure.
       existing.stations.push(row.transferStation)
+      if (row.homeAt) existing.homeAts.push(row.homeAt.unix())
       driftRef.current.set(row.train.tripId, existing)
     }
     // rows is recomputed on each poll; pollStamp is what actually gates a sample
