@@ -36,24 +36,14 @@ import { inferDirection } from '../utilities'
 // through them too, so each is a genuine transfer opportunity.
 const TRANSFER_STATIONS = ['12TH', '19TH', 'MCAR']
 
-// The physical floor: stepping off one train and onto another that's already
-// standing there. These are same-platform or cross-platform changes, so this is
-// doors-and-stairs time rather than a real walk. Anything below this is not a
-// connection at all.
+// Stepping off one train and onto another. Every transfer in the Oakland wye
+// is same-platform or cross-platform, so this is doors-and-stairs time, not a
+// walk: a one-minute connection is genuinely makeable when the train is
+// actually sitting there. What kills these transfers isn't the clock, it's not
+// knowing whether the other train is still coming or already gone, which is
+// what the track view exists to answer. `settings.minTransferMinutes`
+// (default 1) can add slack for anyone who wants it.
 const DOORS_SECONDS = 60
-
-/**
- * Above the floor there's a second, softer threshold: the shortest connection
- * you'd actually bet on (settings.minTransferMinutes, default 3).
- *
- * This matters more than it sounds. BART's August 2026 schedule stopped holding
- * Antioch-bound Yellow trains at 19th St for the Orange, so in the evening the
- * Orange connection there is scheduled at one minute — you arrive as it leaves.
- * Ranking purely by arrival time would recommend that one-minute dash over a
- * Red train at 12th you'd comfortably make, i.e. confidently recommend the
- * option that fails. So connections split in two: ones you can plan on, which
- * drive the recommendation, and sprints, which are offered as an upside.
- */
 
 // A train whose stop at your station is this far in the past is gone.
 const DEPARTED_GRACE_SECONDS = 60
@@ -67,13 +57,27 @@ export interface TransferTrain {
   intMinutes: number
 }
 
-/** A connection you could make here, with what it costs and what it gets you. */
-export interface TransferConnection {
-  train: TransferTrain
-  waitMinutes: number
-  arriveAt: dayjs.Dayjs
-  /** arrival plus the walk at the far end, matching the main view's ETD */
-  homeAt: dayjs.Dayjs
+/**
+ * One train's position across the wye: where it is right now relative to 12th,
+ * 19th and MacArthur. This is what you actually want while pulling into 12th on
+ * an empty platform — the Richmond train may not be here, but it may be sitting
+ * at 19th, in which case staying on your train still catches it.
+ */
+export interface TrackTrain {
+  tripId: string
+  color: string
+  hexcolor: string
+  destination: string
+  /** true for the train you're riding */
+  isYou: boolean
+  /**
+   * Per wye station: minutes until this train is there, or null once it has
+   * been and gone. For your train that's when you arrive; for the others it's
+   * when they leave, which is the moment you'd need to be standing there.
+   */
+  minutesTo: Record<string, number | null>
+  /** stations where you could actually step across onto this train */
+  catchableAt: string[]
 }
 
 export interface TransferOption {
@@ -88,12 +92,6 @@ export interface TransferOption {
   waitMinutes: number
   arriveAt: dayjs.Dayjs | null
   homeAt: dayjs.Dayjs | null
-  /**
-   * An earlier train you could only catch by running, i.e. one scheduled
-   * inside minTransferMinutes of your arrival. Null when there isn't one, or
-   * when the train you'd bet on is already the first one through.
-   */
-  sprint: TransferConnection | null
   /** the station to actually get off at */
   recommended: boolean
   /** this option catches the same onward train as the recommended one */
@@ -122,12 +120,8 @@ export interface TransferRide {
    * hasn't collected you yet.
    */
   alreadyLeftOrigin: boolean
-  /** the station offering the best sprint, when a sprint beats the plan */
-  sprintStation: string | null
-  sprintStationName: string | null
-  /** minutes the sprint would save over the recommended connection */
-  sprintSavesMinutes: number
-  sprintWaitMinutes: number
+  /** every train on the other track, and where it is relative to the wye */
+  track: TrackTrain[]
 }
 
 export interface TransferMagic {
@@ -190,9 +184,9 @@ export const transferMagicSelector = createSelector(
 
     const now = dayjs()
     const nowUnix = now.unix()
-    const plannableSeconds = Math.max(
+    const bufferSeconds = Math.max(
       DOORS_SECONDS,
-      (settings.minTransferMinutes ?? 3) * 60
+      (settings.minTransferMinutes ?? 1) * 60
     )
     const toTrain = (tu: GtfsTripUpdate, unix: number): TransferTrain => ({
       tripId: tu.tripId,
@@ -271,26 +265,10 @@ export const transferMagicSelector = createSelector(
           const youArrive = arrivalAt(tu, station)
           const reachable = youArrive !== null && youArrive > nowUnix
           const candidates = reachable ? connectionsByStation[station] : []
-
-          // The one you'd plan on, and the earlier one you'd have to run for.
           const connection =
-            candidates.find((c) => c.departs >= youArrive! + plannableSeconds) ?? null
-          const sprintCandidate =
-            candidates.find((c) => c.departs >= youArrive! + DOORS_SECONDS) ?? null
-          const sprint =
-            sprintCandidate && sprintCandidate !== connection
-              ? {
-                  train: toTrain(sprintCandidate.tu, sprintCandidate.departs),
-                  waitMinutes: Math.round((sprintCandidate.departs - youArrive!) / 60),
-                  arriveAt: dayjs.unix(sprintCandidate.arrives),
-                  homeAt: dayjs
-                    .unix(sprintCandidate.arrives)
-                    .add(destWalkingMinutes, 'minute'),
-                }
-              : null
+            candidates.find((c) => c.departs >= youArrive! + bufferSeconds) ?? null
 
           return {
-            sprint,
             station,
             stationName: nameOf(station),
             reachable,
@@ -338,24 +316,78 @@ export const transferMagicSelector = createSelector(
           }
         }
 
-        // The best sprint worth mentioning: one that actually beats the plan.
-        // If it doesn't get you home sooner there's no reason to run for it.
-        const sprints = options
-          .filter((o) => o.sprint)
-          .filter((o) => !pick || o.sprint!.arriveAt.isBefore(pick.arriveAt!))
-          .sort((a, b) => a.sprint!.arriveAt.unix() - b.sprint!.arriveAt.unix())
-        const topSprint = sprints[0] ?? null
-        const bestSprint = {
-          sprintStation: topSprint?.station ?? null,
-          sprintStationName: topSprint?.stationName ?? null,
-          sprintWaitMinutes: topSprint?.sprint!.waitMinutes ?? 0,
-          sprintSavesMinutes:
-            topSprint && pick
-              ? Math.round(
-                  pick.arriveAt!.diff(topSprint.sprint!.arriveAt, 'second') / 60
-                )
-              : 0,
+        // Where everything is on the other track. Your row is when you reach
+        // each station; every other row is when that train *leaves* each
+        // station, which is the moment you'd need to already be standing on the
+        // platform. A null means it has been and gone, so a Richmond train
+        // reading "· / 2m / 5m" is one that has cleared 12th and is sitting at
+        // 19th right now: not here, but still yours if you stay on.
+        const connectingTrips = new Map<string, GtfsTripUpdate>()
+        for (const station of TRANSFER_STATIONS) {
+          for (const c of connectionsByStation[station]) {
+            if (!connectingTrips.has(c.tu.tripId)) connectingTrips.set(c.tu.tripId, c.tu)
+          }
         }
+
+        const youRow: TrackTrain = {
+          tripId: tu.tripId,
+          color: tu.color,
+          hexcolor: tu.hexcolor,
+          destination: tu.destination,
+          isYou: true,
+          minutesTo: Object.fromEntries(
+            TRANSFER_STATIONS.map((station) => {
+              const at = arrivalAt(tu, station)
+              return [station, at && at > nowUnix ? Math.round((at - nowUnix) / 60) : null]
+            })
+          ),
+          catchableAt: [],
+        }
+
+        const track: TrackTrain[] = [
+          youRow,
+          ...[...connectingTrips.values()]
+            .map((other) => {
+              const minutesTo: Record<string, number | null> = {}
+              const catchableAt: string[] = []
+              for (const station of TRANSFER_STATIONS) {
+                const departs = departureAt(other, station)
+                const gone = !departs || departs <= nowUnix - DEPARTED_GRACE_SECONDS
+                minutesTo[station] = gone ? null : Math.round((departs! - nowUnix) / 60)
+                const youArrive = arrivalAt(tu, station)
+                if (
+                  departs &&
+                  youArrive &&
+                  youArrive > nowUnix &&
+                  departs >= youArrive + bufferSeconds
+                ) {
+                  catchableAt.push(station)
+                }
+              }
+              return {
+                tripId: other.tripId,
+                color: other.color,
+                hexcolor: other.hexcolor,
+                destination:
+                  nameOf(other.stopUpdates[other.stopUpdates.length - 1]?.stopId) ||
+                  other.destination,
+                isYou: false,
+                minutesTo,
+                catchableAt,
+              }
+            })
+            .filter((t) => TRANSFER_STATIONS.some((s) => t.minutesTo[s] !== null))
+            .sort((a, b) => {
+              const first = (t: TrackTrain) =>
+                Math.min(
+                  ...TRANSFER_STATIONS.map((s) => t.minutesTo[s]).filter(
+                    (v): v is number => v !== null
+                  )
+                )
+              return first(a) - first(b)
+            })
+            .slice(0, 4),
+        ]
 
         // What you'd give up by riding past the recommended stop and catching
         // whatever comes next instead.
@@ -382,7 +414,7 @@ export const transferMagicSelector = createSelector(
               : 0,
           savesAgainst: nextBest?.stationName ?? null,
           alreadyLeftOrigin: stopIndex(tu, settings.currentBartStation) === -1,
-          ...bestSprint,
+          track,
         }
       })
       .sort((a, b) => a.reachesOaklandAt.diff(b.reachesOaklandAt))

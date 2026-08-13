@@ -389,3 +389,57 @@ a:visited {
 .inline-preview .inline-drift .sprint {
   color: #b06000;
 }
+
+/* Track view: where every train is, relative to the three wye stations */
+.transfer-magic table.track {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.transfer-magic table.track th,
+.transfer-magic table.track td {
+  padding: 0.15rem 0.2rem;
+  text-align: right;
+  font-weight: normal;
+  white-space: nowrap;
+}
+
+.transfer-magic table.track thead th {
+  color: #999;
+  font-size: 0.7rem;
+  border-bottom: 1px solid #ddd;
+}
+
+.transfer-magic table.track tbody th {
+  text-align: left;
+  max-width: 9.5em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #666;
+}
+
+.transfer-magic table.track tbody th .color {
+  margin-right: 0.3rem;
+  vertical-align: baseline;
+}
+
+.transfer-magic table.track tr.you {
+  border-bottom: 1px solid #ddd;
+}
+
+.transfer-magic table.track tr.you th,
+.transfer-magic table.track tr.you td {
+  color: #111;
+  font-weight: bold;
+}
+
+.transfer-magic table.track td.gone {
+  color: #ccc;
+}
+
+.transfer-magic table.track td.catchable {
+  color: #111;
+  font-weight: bold;
+}

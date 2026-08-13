@@ -97,7 +97,8 @@ eat-my-shorts/
 - **Ride picker**: defaults to the next train heading into the Oakland wye; `‹ ›` steps through the other candidates
 - **Per-station breakdown**: when you arrive, how long you wait, which onward train you catch, when you get home
 - **Verdict**: the station that gets you home soonest. When several catch the same onward train, the earliest one wins — same arrival, emptier train ("beat the rush"). Otherwise it reports the minutes saved.
-- **Plannable vs sprint**: only connections at least `settings.minTransferMinutes` away (default 3) drive the recommendation. Shorter ones are surfaced separately as a sprint. This is not cosmetic — BART's Aug 10 2026 schedule removed the hold on Antioch-bound Yellow trains at 19th St, so the evening Orange connection there is scheduled at one minute and is routinely missed. Ranking on arrival alone recommends exactly the connection that fails. Below `DOORS_SECONDS` (60) nothing is offered at all.
+- **Track view** (`TransferRide.track`): the primary feature. A grid of where every Richmond-bound train is right now relative to 12th/19th/MacArthur, alongside your own train. Your row is arrival; theirs is departure, since that's when you'd need to be on the platform. `null` renders as `·` for been-and-gone. Answers the question a platform can't: the connection may not be here, but it may be sitting at 19th, in which case staying on catches it.
+- **Connection buffer**: `settings.minTransferMinutes` (default 1) with a hard floor of `DOORS_SECONDS` (60). Every wye transfer is cross-platform, so a one-minute connection is real; an earlier version demoted these as "sprints" and was wrong. Note the slice migrates a persisted 3 (that bad default) back to 1.
 - **Destination** comes from the active preset (the opposite end), not hardcoded
 
 ### 3. Inline Preview (`/inline`) — EXPERIMENTAL

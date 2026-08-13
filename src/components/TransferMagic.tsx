@@ -5,7 +5,64 @@ import dayjs from 'dayjs'
 import { fetchGtfsRtData } from '../store/gtfsRtSlice'
 import { transferMagicSelector } from '../selectors'
 import type { RootState, AppDispatch } from '../store'
-import type { TransferOption } from '../selectors/transferMagic'
+import type { TransferOption, TransferRide } from '../selectors/transferMagic'
+
+const WYE = [
+  { station: '12TH', label: '12th' },
+  { station: '19TH', label: '19th' },
+  { station: 'MCAR', label: 'MacArthur' },
+]
+
+/**
+ * Where every train is on the other track, relative to the three stations.
+ *
+ * Your row is when you get to each station; the rest are when those trains
+ * leave each station, which is the moment you'd need to already be standing
+ * there. A dot means it's been and gone. So a row reading "· 2m 5m" is a train
+ * that has cleared 12th and is at 19th right now, which is precisely the case
+ * you can't see from a platform: not here, but still catchable if you stay on.
+ */
+function TrackView({ ride }: { ride: TransferRide }) {
+  return (
+    <table className="track">
+      <thead>
+        <tr>
+          <th />
+          {WYE.map(({ station, label }) => (
+            <th key={station}>{label}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {ride.track.map((train) => (
+          <tr key={train.tripId} className={train.isYou ? 'you' : ''}>
+            <th>
+              <span className="color" style={{ backgroundColor: train.hexcolor }} />
+              {train.isYou ? 'you' : train.destination}
+            </th>
+            {WYE.map(({ station }) => {
+              const minutes = train.minutesTo[station]
+              const catchable = train.catchableAt.includes(station)
+              return (
+                <td
+                  key={station}
+                  className={[
+                    minutes === null ? 'gone' : '',
+                    catchable ? 'catchable' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                >
+                  {minutes === null ? '·' : `${minutes}m`}
+                </td>
+              )
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
 
 // Countdowns are recomputed from absolute times on every tick rather than read
 // off the selector, which only recomputes when a poll lands.
@@ -47,17 +104,6 @@ function StationRow({ option }: { option: TransferOption }) {
           <span className="color" style={{ backgroundColor: connection.hexcolor }} />
           <span className="transfer-connection">{connection.destination}</span>
           <span className="home-time">{option.homeAt?.format('h:mm a')}</span>
-        </div>
-      )}
-      {reachable && option.sprint && (
-        <div className="transfer-detail sprint">
-          <span>🏃 {option.sprint.waitMinutes}m if you run</span>
-          <span
-            className="color"
-            style={{ backgroundColor: option.sprint.train.hexcolor }}
-          />
-          <span className="transfer-connection">{option.sprint.train.destination}</span>
-          <span className="home-time">{option.sprint.homeAt.format('h:mm a')}</span>
         </div>
       )}
     </div>
@@ -164,6 +210,8 @@ function TransferMagic() {
             </button>
           </div>
 
+          <TrackView ride={ride} />
+
           {ride.recommendedStation && (
             <div className="verdict">
               Get off at{' '}
@@ -180,15 +228,6 @@ function TransferMagic() {
                     ? `${ride.savesMinutes}m sooner than waiting for ${ride.savesAgainst}`
                     : 'your only connection on this train'}
               </div>
-              {ride.sprintStation && (
-                <div className="verdict-sprint">
-                  🏃{' '}
-                  {ride.sprintStation === ride.recommendedStation
-                    ? `the ${ride.sprintWaitMinutes}m connection here`
-                    : `${ride.sprintStationName} in ${ride.sprintWaitMinutes}m`}{' '}
-                  gets you home {ride.sprintSavesMinutes}m sooner, if you make it
-                </div>
-              )}
             </div>
           )}
 

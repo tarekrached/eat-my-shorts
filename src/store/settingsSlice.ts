@@ -59,7 +59,12 @@ const initialState: Settings = {
   homeStation: saved?.homeStation ?? 'NBRK',
   workStation: saved?.workStation ?? 'MONT',
   pollingIntervalSeconds: saved?.pollingIntervalSeconds ?? 60,
-  minTransferMinutes: saved?.minTransferMinutes ?? 3,
+  // Briefly shipped with a default of 3, on the mistaken assumption that a
+  // short connection was risky. Every wye transfer is cross-platform, so a
+  // one-minute connection is fine when the train is actually there, and a
+  // persisted 3 is a value nobody chose. Treat it as unset.
+  minTransferMinutes:
+    saved?.minTransferMinutes === 3 ? 1 : saved?.minTransferMinutes ?? 1,
   trainColors: saved?.trainColors,
 }
 

@@ -244,8 +244,8 @@ function Settings() {
           ))}
         </select>
         <p className="settings-hint">
-          Transfer Magic plans around connections at least this long. Anything
-          shorter is shown as a sprint instead of a recommendation.
+          Slack added when working out which connections you can make. The wye
+          transfers are cross-platform, so 1 min is usually right.
         </p>
       </div>
 
